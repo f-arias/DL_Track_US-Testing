@@ -275,11 +275,11 @@ def doCalculations(  # TODO adapt docstring
         based on the segmented fascicle fragments and aponeuroses
         as float.
     x_low1 : list
-        List variable containing the estimated x-coordinates
-        of the lower edge from the upper aponeurosis as integers.
+        A list of the x-coordinates for the insertion points of each fascicle on the
+        **deep (lower) aponeurosis**.
     x_high1 : list
-        List variable containing the estimated x-coordinates
-        of the upper edge from the lower aponeurosis as integers.
+        A list of the x-coordinates for the insertion points of each fascicle on the
+        **superficial (upper) aponeurosis**.
     midthick : float
         Float variable containing the estimated distance
         between the lower and upper aponeurosis in pixel units.
@@ -767,81 +767,86 @@ def doCalculations_custom (  # TODO adapt docstring
     filter_fasc: bool,
     image_callback=None,
 ):
-    """Function to compute muscle architectural parameters based on
-    convolutional neural network segmentation in images.
+    """ **doCalculation_custom es una funcion corregida y adaptada para obtener las coordenadas X e Y de las Aponeurosis**
+    Calcula los parámetros de la arquitectura muscular a partir de una imagen de ultrasonido usando segmentaciones de CNN.
 
-    Firstly, images are segmented by the network. Then, predictions
-    are thresholded and filtered. The aponeuroses edges are computed and
-    the fascicle length and pennation angle calculated. This is done
-    by extrapolating fascicle segments above a threshold length. Then
-    the intersection between aponeurosis edge and fascicle structures are
-    computed.
-    Returns none when not more than one aponeurosis contour is
-    detected in the image.
+    Esta función orquesta el proceso de análisis. Primero, utiliza dos modelos de Keras
+    pre-entrenados para segmentar aponeurosis y fascículos. Las máscaras binarias resultantes
+    se procesan para extraer contornos refinados. Los fragmentos de fascículos y los bordes
+    de las aponeurosis se modelan como líneas (polinomios de grado 1) y se extrapolan para
+    encontrar sus puntos de intersección. A partir de estas intersecciones, se calculan
+    parámetros arquitectónicos como la longitud del fascículo (LF), el ángulo de pennación (AP)
+    y el grosor muscular (GM). La función devuelve estos parámetros junto con una figura que
+    visualiza los resultados.
 
     Parameters
     ----------
     original_image : np.ndarray
-            Normalized, reshaped and rescaled rayscale image to be
-            analysed as a numpy array. The image must
-            be loaded prior to model inputting, specifying a path
-            is not valid.
+        La imagen de entrada preprocesada para los modelos de red neuronal. Debe ser un
+        array de NumPy normalizado, redimensionado (ej., a 512x512) y reescalado,
+        típicamente con forma (1, altura, ancho, canales), listo para model.predict().
     img_copy : np.ndarray
-        A copy of the input image.
+        Una copia de la imagen de ultrasonido original, utilizada para la visualización. Las
+        dimensiones de esta imagen (h, w) definen el espacio de coordenadas para los
+        resultados de salida.
     h : int
-        Integer variable containing the height of the input image (img).
+        La altura (en píxeles) de `img_copy`. Se utiliza para reescalar las predicciones
+        del modelo de vuelta al tamaño de la imagen original.
     w : int
-        Integer variable containing the width of the input image (img).
-    calib_dist : int
-        Integer variable containing the distance between the two
-        specified point in pixel units. This value was either computed
-        automatically or manually. Must be non-negative. If "None", the
-        values are outputted in pixel units.
-    spacing : {10, 5, 15, 20}
-        Integer variable containing the known distance in milimeter
-        between the two placed points by the user or the scaling bars
-        present in the image. This can be 5, 10, 15 or 20 milimeter.
-        Must be non-negative and non-zero.
-    model_apo :
-        Contains keras model for prediction of aponeuroses
-    model_fasc :
-        Contains keras model for prediction of fascicles
+        El ancho (en píxeles) de `img_copy`. Se utiliza para reescalar las predicciones
+        del modelo de vuelta al tamaño de la imagen original.
+    calib_dist : int or None
+        La distancia de calibración en píxeles que corresponde a la distancia física
+        conocida en `spacing` (ej., en mm). Si es `None`, los resultados se devuelven
+        en unidades de píxeles. Debe ser no negativo.
+    spacing : int
+        La distancia física conocida (ej., en milímetros) para la calibración,
+        correspondiente a `calib_dist`. Valores comunes son 5, 10, 15 o 20 mm.
+    model_apo : tf.keras.Model
+        El objeto del modelo de Keras ya cargado para la segmentación de aponeurosis.
+        Debe tener un método .predict().
+    model_fasc : tf.keras.Model
+        El objeto del modelo de Keras ya cargado para la segmentación de fascículos.
+        Debe tener un método .predict().
     dictionary : dict
-        Dictionary variable containing analysis parameters.
-        These include must include apo_threshold, apo_length_tresh, fasc_threshold,
-        fasc_cont_threshold, min_width, max_pennation,
-        min_pennation.
+        Un diccionario que contiene los parámetros de análisis, como umbrales de detección
+        y restricciones de ángulo. Debe incluir las claves: 'aponeurosis_detection_threshold',
+        'aponeurosis_length_threshold', 'fascicle_detection_threshold',
+        'fascicle_length_threshold', 'minimal_muscle_width', 'maximal_pennation_angle',
+        y 'minimal_pennation_angle'.
     filter_fasc : bool
-        If True, fascicles will be filtered so that no crossings are included.
-        This may reduce number of totally detected fascicles.
-    image_callback:
-        Callback function to update the image display. If None, no callback is used.
+        Si es True, se aplica un paso de filtrado para eliminar fascículos que
+        contienen espacialmente a otros fascículos a lo largo del eje x.
+    image_callback : callable, optional
+        Una función de callback opcional que recibe la figura de matplotlib generada
+        como argumento, útil para actualizar una interfaz gráfica. Por defecto es None.
 
     Returns
     -------
-    fasc_l : list
-        List variable contianing the estimated fascicle lengths
-        based on the segmented fascicle fragments in pixel units
-        as float. If calib_dist is specified, then the length is computed
-        in centimeter.
-    pennation : list
-        List variable containing the estimated pennation angles
-        based on the segmented fascicle fragments and aponeuroses
-        as float.
-    x_low1 : list
-        List variable containing the estimated x-coordinates
-        of the lower edge from the upper aponeurosis as integers.
-    x_high1 : list
-        List variable containing the estimated x-coordinates
-        of the upper edge from the lower aponeurosis as integers.
-    midthick : float
-        Float variable containing the estimated distance
-        between the lower and upper aponeurosis in pixel units.
-        If calib_dist is specified, then the distance is computed
-        in centimeter.
-    fig : matplotlib.figure
-        Figure including the input image, the segmented aponeurosis and
-        the extrapolated fascicles.
+    tuple
+        Una tupla que contiene seis elementos: (fasc_l, pennation, x_low, x_high, midthick, fig).
+        Si el análisis falla (ej., se detectan menos de dos aponeurosis), se devuelve una
+        tupla de seis valores `None`.
+
+        fasc_l : list de float
+            Una lista con las longitudes calculadas para cada fascículo válido. Las unidades
+            son píxeles, o milímetros si se proporciona `calib_dist`.
+        pennation : list de float
+            Una lista con los ángulos de pennación calculados (en grados) para cada
+            fascículo correspondiente en `fasc_l`.
+        x_low : list de int
+            Una lista de las coordenadas X de los puntos de inserción de cada fascículo en la
+            **aponeurosis profunda (inferior)**.
+        x_high : list de int
+            Una lista de las coordenadas X de los puntos de inserción de cada fascículo en la
+            **aponeurosis superficial (superior)**.
+        midthick : float
+            El grosor muscular calculado en la región central de la imagen. Las unidades
+            son píxeles, o milímetros si se proporciona `calib_dist`.
+        fig : matplotlib.figure.Figure
+            El objeto de la figura de Matplotlib que contiene la gráfica visual del análisis,
+            mostrando la imagen original, las aponeurosis y los fascículos detectados.
+    """
 
     Notes
     -----
@@ -1294,6 +1299,7 @@ def doCalculations_custom (  # TODO adapt docstring
         if image_callback:
             image_callback(fig)
 
+        # Agregar los retornos de las coordenadas X e Y de las aponeurosis
         return (
             fasc_l,
             pennation,
@@ -1305,4 +1311,5 @@ def doCalculations_custom (  # TODO adapt docstring
 
     else:
 
+        #Aqui tienes adapta la cantidad de None a patir de la cantidad de salidas que establezcas
         return None, None, None, None, None, None
