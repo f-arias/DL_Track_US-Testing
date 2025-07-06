@@ -846,14 +846,16 @@ def doCalculations_custom (  # TODO adapt docstring
         fig : matplotlib.figure.Figure
             El objeto de la figura de Matplotlib que contiene la gráfica visual del análisis,
             mostrando la imagen original, las aponeurosis y los fascículos detectados.
-        upp_x_apo : np.ndarray
-            Array de NumPy con las coordenadas X de la aponeurosis superficial (superior) procesada.
-        upp_y_apo : np.ndarray
-            Array de NumPy con las coordenadas Y de la aponeurosis superficial (superior) procesada y suavizada.
-        low_x_apo : np.ndarray
-            Array de NumPy con las coordenadas X de la aponeurosis profunda (inferior) procesada.
-        low_y_apo : np.ndarray
-            Array de NumPy con las coordenadas Y de la aponeurosis profunda (inferior) procesada y suavizada.
+        aponeurosis superficial : list de array 
+            upp_x_apo : np.ndarray
+                Array de NumPy con las coordenadas X de la aponeurosis superficial (superior) procesada.
+            upp_y_apo : np.ndarray
+                Array de NumPy con las coordenadas Y de la aponeurosis superficial (superior) procesada y suavizada.
+        aponeurosis profunda : list de array 
+            low_x_apo : np.ndarray
+                Array de NumPy con las coordenadas X de la aponeurosis profunda (inferior) procesada.
+            low_y_apo : np.ndarray
+                Array de NumPy con las coordenadas Y de la aponeurosis profunda (inferior) procesada y suavizada.
     """
 
     Notes
@@ -1313,21 +1315,17 @@ def doCalculations_custom (  # TODO adapt docstring
         low_x_apo = low_x.copy()
         low_y_apo = low_y_new.copy()
 
-        # Agregar los retornos de las coordenadas X e Y de las aponeurosis
         return (
             fasc_l,
             pennation,
             data["x_low"].tolist(),
             data["x_high"].tolist(),
             midthick,
+            [upp_x_apo, upp_y_apo],
+            [low_x_apo, low_y_apo],
             fig,
-            upp_x_apo,
-            upp_y_apo,
-            low_x_apo,
-            low_y_apo,
         )
 
     else:
 
-        #Aqui tienes adapta la cantidad de None a patir de la cantidad de salidas que establezcas
-        return None, None, None, None, None, None, None, None, None, None
+        return None, None, None, None, None, None, None, None, 
