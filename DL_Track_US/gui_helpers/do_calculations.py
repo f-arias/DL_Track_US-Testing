@@ -767,8 +767,10 @@ def doCalculations_custom (  # TODO adapt docstring
     filter_fasc: bool,
     image_callback=None,
 ):
-    """ **doCalculation_custom es una funcion corregida y adaptada para obtener las coordenadas X e Y de las Aponeurosis**
-    Calcula los parámetros de la arquitectura muscular a partir de una imagen de ultrasonido usando segmentaciones de CNN.
+    """ **doCalculation_custom es una funcion adaptada de doCalculation para obtener las 
+    coordenadas X e Y de las Aponeurosis** 
+    Calcula los parámetros de la arquitectura muscular a partir de una imagen de 
+    ultrasonido usando segmentaciones de CNN.
 
     Esta función orquesta el proceso de análisis. Primero, utiliza dos modelos de Keras
     pre-entrenados para segmentar aponeurosis y fascículos. Las máscaras binarias resultantes
@@ -824,9 +826,9 @@ def doCalculations_custom (  # TODO adapt docstring
     Returns
     -------
     tuple
-        Una tupla que contiene diez elementos: (fasc_l, pennation, x_low, x_high, midthick, fig, upp_x_apo, upp_y_apo, low_x_apo, low_y_apo).
+        Una tupla que contiene ocho elementos: (fasc_l, pennation, x_low, x_high, midthick, [upp_x_apo, upp_y_apo], [low_x_apo, low_y_apo], fig).
         Si el análisis falla (ej., se detectan menos de dos aponeurosis), se devuelve una
-        tupla de diez valores `None`.
+        tupla de ocho valores `None`.
 
         fasc_l : list de float
             Una lista con las longitudes calculadas para cada fascículo válido. Las unidades
