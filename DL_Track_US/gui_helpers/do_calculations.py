@@ -824,9 +824,9 @@ def doCalculations_custom (  # TODO adapt docstring
     Returns
     -------
     tuple
-        Una tupla que contiene seis elementos: (fasc_l, pennation, x_low, x_high, midthick, fig).
+        Una tupla que contiene diez elementos: (fasc_l, pennation, x_low, x_high, midthick, fig, upp_x_apo, upp_y_apo, low_x_apo, low_y_apo).
         Si el análisis falla (ej., se detectan menos de dos aponeurosis), se devuelve una
-        tupla de seis valores `None`.
+        tupla de diez valores `None`.
 
         fasc_l : list de float
             Una lista con las longitudes calculadas para cada fascículo válido. Las unidades
@@ -846,6 +846,16 @@ def doCalculations_custom (  # TODO adapt docstring
         fig : matplotlib.figure.Figure
             El objeto de la figura de Matplotlib que contiene la gráfica visual del análisis,
             mostrando la imagen original, las aponeurosis y los fascículos detectados.
+        aponeurosis superficial : list de array 
+            upp_x_apo : np.ndarray
+                Array de NumPy con las coordenadas X de la aponeurosis superficial (superior) procesada.
+            upp_y_apo : np.ndarray
+                Array de NumPy con las coordenadas Y de la aponeurosis superficial (superior) procesada y suavizada.
+        aponeurosis profunda : list de array 
+            low_x_apo : np.ndarray
+                Array de NumPy con las coordenadas X de la aponeurosis profunda (inferior) procesada.
+            low_y_apo : np.ndarray
+                Array de NumPy con las coordenadas Y de la aponeurosis profunda (inferior) procesada y suavizada.
     """
 
     Notes
@@ -1299,17 +1309,23 @@ def doCalculations_custom (  # TODO adapt docstring
         if image_callback:
             image_callback(fig)
 
-        # Agregar los retornos de las coordenadas X e Y de las aponeurosis
+        # Create copies for new output variables
+        upp_x_apo = upp_x.copy()
+        upp_y_apo = upp_y_new.copy()
+        low_x_apo = low_x.copy()
+        low_y_apo = low_y_new.copy()
+
         return (
             fasc_l,
             pennation,
             data["x_low"].tolist(),
             data["x_high"].tolist(),
             midthick,
+            [upp_x_apo, upp_y_apo],
+            [low_x_apo, low_y_apo],
             fig,
         )
 
     else:
 
-        #Aqui tienes adapta la cantidad de None a patir de la cantidad de salidas que establezcas
-        return None, None, None, None, None, None
+        return None, None, None, None, None, None, None, None, 
