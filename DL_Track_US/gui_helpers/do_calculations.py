@@ -311,17 +311,29 @@ def doCalculations(  # TODO adapt docstring
                            [0.         0.         0.        ]
                            [0.         0.         0.        ]]]],
                         h=512, w=512,calib_dist=None, spacing=10,
-                        filename=test1,
-                        apo_modelpath="C:/Users/admin/Documents/DL_Track/Models_DL_Track/Final_models/model-VGG16-fasc-BCE-512.h5",
-                        fasc_modelpath="C:/Users/admin/Documents/DL_Track/Models_DL_Track/Final_models/model-apo-VGG-BCE-512.h5",
-                        scale_statement=None,
-                        dictionary={'apo_treshold': '0.2', 'apo_length_tresh': '600', fasc_threshold': '0.05', 'fasc_cont_thresh': '40', 'min_width': '60', 'min_pennation': '10', 'max_pennation': '40'},
-                        filter_fasc = False)
-    [1030.1118966321328, 1091.096002143386, ..., 1163.07073327008, 1080.0001937069776, 976.6099281240987]
-    [19.400700671533016, 18.30126098122986, ..., 18.505345607096586, 18.727693601171197, 22.03704574228162]
-    [441, 287, 656, 378, 125, 15, ..., -392, -45, -400, -149, -400]
-    [1410, 1320, 1551, 1351, 1149, ..., 885, 937, 705, 869, 507]
-    348.1328577
+                        h=512, w=512, calib_dist=None, spacing=10,
+                        model_apo=<your_keras_model_apo>,
+                        model_fasc=<your_keras_model_fasc>,
+                        dictionary={'aponeurosis_detection_threshold': '0.2',
+                                    'aponeurosis_length_threshold': '600',
+                                    'fascicle_detection_threshold': '0.05',
+                                    'fascicle_length_threshold': '40',
+                                    'minimal_muscle_width': '60',
+                                    'minimal_pennation_angle': '10',
+                                    'maximal_pennation_angle': '40'},
+                        filter_fasc=False,
+                        image_callback=None)
+
+    # Ejemplo de salida esperada (los valores reales dependerán de la imagen y modelos):
+    # fasc_l = [100.0, 102.5, ...],
+    # pennation = [20.0, 21.5, ...],
+    # x_low = [50, 55, ...],
+    # x_high = [150, 155, ...],
+    # mask_roi = np.array(...),  (una máscara 2D con valores 0 o 255)
+    # midthick = 75.0,
+    # aponeurosis_sup = [np.array([x_coords_sup]), np.array([y_coords_sup])],
+    # aponeurosis_inf = [np.array([x_coords_inf]), np.array([y_coords_inf])],
+    # fig = <matplotlib.figure.Figure object>
     """
     matplotlib.use("Agg")
 
@@ -370,7 +382,7 @@ def doCalculations(  # TODO adapt docstring
     # Check whether contours are detected
     # If not, break function
     if len(contours) < 1:
-        return None, None, None, None, None, None 
+        return None, None, None, None, None, None
 
     contours, _ = sortContours(contours)  # Sort contours from top to bottom
 
@@ -633,7 +645,7 @@ def doCalculations(  # TODO adapt docstring
                     )
 
         # Filter out fascicles that intersect with their right neighbors
-        if filter_fasc == 1:
+        if filter_fasc:  # filter_fasc is expected to be a boolean
             data = filter_fascicles(fascicle_data)
         else:
             data = fascicle_data
@@ -753,8 +765,8 @@ def doCalculations(  # TODO adapt docstring
 
         return None, None, None, None, None, None
 
-#!!Falta agregar los cambios en la salida, para que entregue las coordenadas de las aponeurosis
-def doCalculations_custom (  # TODO adapt docstring
+# Esta función personalizada extiende doCalculations para incluir salidas adicionales.
+def doCalculations_custom (
     original_image: np.ndarray,
     img_copy: np.ndarray,
     h: int,
@@ -826,38 +838,44 @@ def doCalculations_custom (  # TODO adapt docstring
     Returns
     -------
     tuple
-        Una tupla que contiene ocho elementos: (fasc_l, pennation, x_low, x_high, midthick, [upp_x_apo, upp_y_apo], [low_x_apo, low_y_apo], fig).
+        Una tupla que contiene nueve elementos:
+        (fasc_l, pennation, x_low, x_high, mask_roi, midthick, aponeurosis_sup, aponeurosis_inf, fig).
         Si el análisis falla (ej., se detectan menos de dos aponeurosis), se devuelve una
-        tupla de ocho valores `None`.
+        tupla de nueve valores `None`.
 
-        fasc_l : list de float
+        fasc_l : list de float or None
             Una lista con las longitudes calculadas para cada fascículo válido. Las unidades
-            son píxeles, o milímetros si se proporciona `calib_dist`.
-        pennation : list de float
+            son píxeles, o milímetros si se proporciona `calib_dist`. None si falla el análisis.
+        pennation : list de float or None
             Una lista con los ángulos de pennación calculados (en grados) para cada
-            fascículo correspondiente en `fasc_l`.
-        x_low : list de int
+            fascículo correspondiente en `fasc_l`. None si falla el análisis.
+        x_low : list de int or None
             Una lista de las coordenadas X de los puntos de inserción de cada fascículo en la
-            **aponeurosis profunda (inferior)**.
-        x_high : list de int
+            **aponeurosis profunda (inferior)**. None si falla el análisis.
+        x_high : list de int or None
             Una lista de las coordenadas X de los puntos de inserción de cada fascículo en la
-            **aponeurosis superficial (superior)**.
-        midthick : float
+            **aponeurosis superficial (superior)**. None si falla el análisis.
+        mask_roi : np.ndarray or None
+            Una máscara binaria (uint8) de la región de interés (ROI) que representa el área
+            entre las aponeurosis detectadas. Las dimensiones son las mismas que `img_copy`.
+            Los píxeles dentro del ROI son 255, y fuera son 0. None si falla el análisis.
+        midthick : float or None
             El grosor muscular calculado en la región central de la imagen. Las unidades
-            son píxeles, o milímetros si se proporciona `calib_dist`.
-        fig : matplotlib.figure.Figure
+            son píxeles, o milímetros si se proporciona `calib_dist`. None si falla el análisis.
+        aponeurosis_sup : list de np.ndarray or None
+            Una lista que contiene dos arrays de NumPy: `[upp_x_apo, upp_y_apo]`.
+            `upp_x_apo` son las coordenadas X de la aponeurosis superficial (superior).
+            `upp_y_apo` son las coordenadas Y (suavizadas) de la aponeurosis superficial.
+            None si falla el análisis.
+        aponeurosis_inf : list de np.ndarray or None
+            Una lista que contiene dos arrays de NumPy: `[low_x_apo, low_y_apo]`.
+            `low_x_apo` son las coordenadas X de la aponeurosis profunda (inferior).
+            `low_y_apo` son las coordenadas Y (suavizadas) de la aponeurosis profunda.
+            None si falla el análisis.
+        fig : matplotlib.figure.Figure or None
             El objeto de la figura de Matplotlib que contiene la gráfica visual del análisis,
             mostrando la imagen original, las aponeurosis y los fascículos detectados.
-        aponeurosis superficial : list de array 
-            upp_x_apo : np.ndarray
-                Array de NumPy con las coordenadas X de la aponeurosis superficial (superior) procesada.
-            upp_y_apo : np.ndarray
-                Array de NumPy con las coordenadas Y de la aponeurosis superficial (superior) procesada y suavizada.
-        aponeurosis profunda : list de array 
-            low_x_apo : np.ndarray
-                Array de NumPy con las coordenadas X de la aponeurosis profunda (inferior) procesada.
-            low_y_apo : np.ndarray
-                Array de NumPy con las coordenadas Y de la aponeurosis profunda (inferior) procesada y suavizada.
+            None si falla el análisis.
     """
 
     Notes
@@ -1346,7 +1364,7 @@ def doCalculations_custom (  # TODO adapt docstring
             pennation,
             data["x_low"].tolist(),
             data["x_high"].tolist(),
-            mask_roi
+            mask_roi,
             midthick,
             [upp_x_apo, upp_y_apo],
             [low_x_apo, low_y_apo],
