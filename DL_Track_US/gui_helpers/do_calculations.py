@@ -370,7 +370,7 @@ def doCalculations(  # TODO adapt docstring
     # Check whether contours are detected
     # If not, break function
     if len(contours) < 1:
-        return None, None, None, None, None, None
+        return None, None, None, None, None, None 
 
     contours, _ = sortContours(contours)  # Sort contours from top to bottom
 
@@ -899,7 +899,8 @@ def doCalculations_custom (  # TODO adapt docstring
     # Get settings
     dic = dictionary
 
-    # Get variables from dictionary
+    # Get variables from dictionary, parametros de analisis relevantes
+    # se ajustan su configuracion a sus valores predeterminados.
     fasc_cont_thresh = int(dic["fascicle_length_threshold"])
     min_width = int(dic["minimal_muscle_width"])
     max_pennation = int(dic["maximal_pennation_angle"])
@@ -926,25 +927,28 @@ def doCalculations_custom (  # TODO adapt docstring
     x_high = []
 
     # Compute contours to identify the aponeuroses
-    _, thresh = cv2.threshold(apo_image, 0, 255, cv2.THRESH_BINARY)
+    _, thresh = cv2.threshold(apo_image, 0, 255, cv2.THRESH_BINARY)    # Binarizacion por umbral| valor max=255| umbral=0 ?
     thresh = thresh.astype("uint8")
-    contours, hierarchy = cv2.findContours(
-        thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE
-    )
+    contours, hierarchy = cv2.findContours(    #imagen_umbralizada, modo:Recupera solo contornos exteriores extremos
+        thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE    
+    )    #,metodo:de aproximacion,almacena todos los puntos(x,y) del contorno
 
-    contours_re = []
+    contours_re = []    #Creacion de lista
     for contour in contours:  # Remove any contours that are very small
-        if len(contour) > apo_length_tresh:
+        if len(contour) > apo_length_tresh:   #eliminacion de artefactos o ruidos
             contours_re.append(contour)
-    contours = contours_re
+    contours = contours_re     #contours contiene contornos mayores apo_lenght_thresh
 
     # Check whether contours are detected
     # If not, break function
     if len(contours) < 1:
-        return None, None, None, None, None, None
+        return None, None, None, None, None, None, None, None, None
+    
+    contours, _ = sortContours(contours)  # Ordena los contornos de arriba hacia abajo, posicion vertical
 
-    contours, _ = sortContours(contours)  # Sort contours from top to bottom
-
+    """Ordena los puntos(coordenadas) de cada contorno, de izquierda a derecha eje X
+    Si hay 2 puntos con el mismo X, se ordena por su eje Y de arriba a abajo
+    el origen esta en el extremo izquierdo superior, un valor Y menor estara mas arriba """
     # mask_apo = np.zeros(thresh.shape,np.uint8)
     contours_re2 = []
     for contour in contours:
@@ -959,9 +963,10 @@ def doCalculations_custom (  # TODO adapt docstring
             allx.append(ptsT[a][0, 0])
             ally.append(ptsT[a][0, 1])
         app = np.array(list(zip(allx, ally)))
-        contours_re2.append(app)
+        contours_re2.append(app)    #contours_re2 contiene los mismo contornos que antes, pero ordenados sus ptos
 
-    # Merge nearby contours
+    # Fusionar contornos cercanos
+    #contours_re2 es una [lista], cada elemento es un contorno (n-ptos, 2[coordenadas X Y]) = (n-filas,n-columnas)
     # countU = 0
     xs1 = []
     xs2 = []
@@ -969,29 +974,35 @@ def doCalculations_custom (  # TODO adapt docstring
     ys2 = []
     maskT = np.zeros(thresh.shape, np.uint8)
     for cnt in contours_re2:
-        ys1.append(cnt[0][1])
+        ys1.append(cnt[0][1])    #cnt[pto][coordenada] = cnt [pto,coordenada], debido a que cnt es un ndarray
         ys2.append(cnt[-1][1])
         xs1.append(cnt[0][0])
         xs2.append(cnt[-1][0])
         cv2.drawContours(maskT, [cnt], 0, 255, -1)
 
-    for countU in range(0, len(contours_re2) - 1):
-        if (
+    for countU in range(0, len(contours_re2) - 1): #countU itera desde 0 a todos los contornos_re2 -1
+        if (    #Con estas condicionales, verifica si 2 contornos pertenecen a una misma aponeurosis
             xs1[countU + 1] > xs2[countU]
         ):  # Check if x of contour2 is higher than x of contour 1
             y1 = ys2[countU]
             y2 = ys1[countU + 1]
             if y1 - 10 <= y2 <= y1 + 10:
+                #vstack, fusiona apilando ambos contornos, m= (M+N,2) = contours_re2[M,2]+ ''[N,2]
                 m = np.vstack((contours_re2[countU], contours_re2[countU + 1]))
-                cv2.drawContours(maskT, [m], 0, 255, -1)
+                #drawContours(imagen_de_destino,contornos,indice de contorno a dibujar, valor de pixel, thickness=-1 rellena todo el area del contorno)
+                cv2.drawContours(maskT, [m], 0, 255, -1)    #dibuja (pixeles=255) los contornos fusionado en la mascara
         countU += 1
-
-    maskT[maskT > 0] = 1
-    skeleton = skeletonize(maskT).astype(np.uint8)
-    kernel = np.ones((3, 7), np.uint8)
-    dilate = cv2.dilate(skeleton, kernel, iterations=15)
+        
+    #Hasta aqui maskT contiene los contornos rellandos que pertenecen a las aponeurosis con valor 255 y fondo 0
+    maskT[maskT > 0] = 1    #Normaliza maskT, es decir,solo cambia los pixeles de valor 255 a 1
+    
+    # Operaciones morfologicas
+    skeleton = skeletonize(maskT).astype(np.uint8)    #Esqueleto de los contornos gruesos de las aponeurosis
+    kernel = np.ones((3, 7), np.uint8)    #El kernel es mas rectangular para reconectar huecos horizontales
+    dilate = cv2.dilate(skeleton, kernel, iterations=15)    #dilatacion y erosion para reconectar segmentos discontinuos debido al esqueleto
     erode = cv2.erode(dilate, kernel, iterations=10)
 
+    #Por ultima vez, se vuelve a convertir en contornos ya limpios.
     contoursE, hierarchy = cv2.findContours(
         erode, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE
     )
@@ -1003,35 +1014,47 @@ def doCalculations_custom (  # TODO adapt docstring
 
     for contour in contoursE:
         cv2.drawContours(mask_apoE, [contour], 0, 255, -1)
-    contoursE, _ = sortContours(contoursE)
+    contoursE, _ = sortContours(contoursE)    #a esta altura contourE contiene contornos limpios, ordenados y continuos
 
     # Only continues beyond this point if 2 aponeuroses can be detected
     if len(contoursE) >= 2:
         # Get the x,y coordinates of the upper/lower edge of the 2 aponeuroses
-        upp_x, upp_y = contourEdge("B", contoursE[0])
-
+        # upp_y_x son coordenadas especificamente del borde inferior de la apo. que contacta con los fasciculos
+        upp_x, upp_y = contourEdge("B", contoursE[0]) #coordenadas de aponeurosis superfcial
+        #if-else, para confirmar si el siguiente contorno pertenece a la misma apo. superficial, debe pasar el umbral min_width
+        #en caso que esten muy cerca, asume que es la misma apo. y continua con el siguiente contorno.
         if contoursE[1][0, 0, 1] > contoursE[0][0, 0, 1] + min_width:
             low_x, low_y = contourEdge("T", contoursE[1])
         else:
             low_x, low_y = contourEdge("T", contoursE[2])
 
+        #Las coordenadas extraídas directamente de los píxeles son "ruidosas" y tienen forma de escalera. Esta fase las suaviza.
+        #Este filtro es ideal para suavizar datos secuenciales, los suaviza conservando la forma y curvatura general
         upp_y_new = savgol_filter(upp_y, 81, 2)  # window size 51, polynomial 3
         low_y_new = savgol_filter(low_y, 81, 2)
 
-        # Make a binary mask to only include fascicles within the region
-        # between the 2 aponeuroses
+        # Creacion de mascara ROI que solo contenga el Musculo limitado por sus aponeurosis
+        """
+        Mascara de 0 y 255 que contiene el area musculoesqueletica de interes.
+        En caso que una aponeurosis sea mas larga (en el x mayoritariamente) esto lo
+        trabaja por omision, es decir, solo considera lo que es certero predicho por la CNN
+        el area donde las aponeurosis no coincidan en el eje x, se omite por el rellenado
+        del area.
+        """
         ex_mask = np.zeros(thresh.shape, np.uint8)
         ex_1 = 0
         ex_2 = np.minimum(len(low_x), len(upp_x))
 
-        for ii in range(ex_1, ex_2):
+        for ii in range(ex_1, ex_2):    #Barrido columna por columna
             ymin = int(np.floor(upp_y_new[ii]))
             ymax = int(np.ceil(low_y_new[ii]))
 
-            ex_mask[:ymin, ii] = 0
-            ex_mask[ymax:, ii] = 0
-            ex_mask[ymin:ymax, ii] = 255
+            ex_mask[:ymin, ii] = 0    #Sobre la apo. superficial
+            ex_mask[ymax:, ii] = 0    #Debajo de la apo. profunda
+            ex_mask[ymin:ymax, ii] = 255    #Entre las apos.
 
+#Hasta aqui es suficiente, el resto usa las variable de apo. idealizando y extrapolando para los fasciculos
+#------------------------------------------------------------------------------------------------
         # Calculate slope of central portion of each aponeurosis & use this to
         # compute muscle thickness
         Alist = list(set(upp_x).intersection(low_x))
@@ -1316,12 +1339,14 @@ def doCalculations_custom (  # TODO adapt docstring
         upp_y_apo = upp_y_new.copy()
         low_x_apo = low_x.copy()
         low_y_apo = low_y_new.copy()
+        mask_roi  = ex_mask.copy()    #Mascara del area muscular de interes
 
         return (
             fasc_l,
             pennation,
             data["x_low"].tolist(),
             data["x_high"].tolist(),
+            mask_roi
             midthick,
             [upp_x_apo, upp_y_apo],
             [low_x_apo, low_y_apo],
@@ -1330,4 +1355,4 @@ def doCalculations_custom (  # TODO adapt docstring
 
     else:
 
-        return None, None, None, None, None, None, None, None, 
+        return None, None, None, None, None, None, None, None, None
