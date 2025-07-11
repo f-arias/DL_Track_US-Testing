@@ -780,7 +780,7 @@ def doCalculations_custom (
     image_callback=None,
 ):
     """ **doCalculation_custom es una funcion adaptada de doCalculation para obtener las 
-    coordenadas X e Y de las Aponeurosis** 
+    coordenadas X e Y de las Aponeurosis y la mascara del musculo que rodea(ROI)** 
     Calcula los parámetros de la arquitectura muscular a partir de una imagen de 
     ultrasonido usando segmentaciones de CNN.
 
