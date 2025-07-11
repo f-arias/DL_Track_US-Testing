@@ -19,14 +19,14 @@ Se han realizado modificaciones en la función `doCalculations_custom` ubicada e
     Estas variables se definen y retornan en las siguientes secciones del código:
     *   Definición de `ex_mask` (usada para `mask_roi`): [Líneas 1062](https://github.com/f-arias/DL_Track_US-Testing/blob/b2a15fb9ab8be11295f24ef4b2b9c22cfd8f9194/DL_Track_US/gui_helpers/do_calculations.py#L1062)
     *   Copia de variables internas para la salida (`mask_roi`, `upp_x_apo`, etc.): [Líneas 1355-1360](https://github.com/f-arias/DL_Track_US-Testing/blob/b2a15fb9ab8be11295f24ef4b2b9c22cfd8f9194/DL_Track_US/gui_helpers/do_calculations.py#L1355-L1360)
-    *   Sentencia `return` actualizada (9 variables en total): [Líneas 1361-1371](https://github.com/f-arias/DL_Track_US-Testing/blob/fix/doCalculations_custom-return-docs/DL_Track_US/gui_helpers/do_calculations.py#L1361-L1371)
+    *   Sentencia `return` actualizada (9 variables en total): [Líneas 1362-1372](https://github.com/f-arias/DL_Track_US-Testing/blob/b2a15fb9ab8be11295f24ef4b2b9c22cfd8f9194/DL_Track_US/gui_helpers/do_calculations.py#L1362-L1372)
     *   Sentencias `return None` actualizadas para devolver 9 `None`s en caso de fallo:
-        *   [Línea 932](https://github.com/f-arias/DL_Track_US-Testing/blob/fix/doCalculations_custom-return-docs/DL_Track_US/gui_helpers/do_calculations.py#L932)
-        *   [Línea 1375](https://github.com/f-arias/DL_Track_US-Testing/blob/fix/doCalculations_custom-return-docs/DL_Track_US/gui_helpers/do_calculations.py#L1375)
+        *   [Línea 963](https://github.com/f-arias/DL_Track_US-Testing/blob/abbdab46f108c6431bc1b0600d36b0de9154ef1a/DL_Track_US/gui_helpers/do_calculations.py#L963)
+        *   [Línea 1376](https://github.com/f-arias/DL_Track_US-Testing/blob/b2a15fb9ab8be11295f24ef4b2b9c22cfd8f9194/DL_Track_US/gui_helpers/do_calculations.py#L1376)
 
 2.  **Actualización del Docstring:**
     El docstring de la función `doCalculations_custom` ha sido expandido para incluir la descripción detallada de las cinco nuevas variables retornadas y para asegurar que la tupla de retorno refleje nueve elementos.
-    *   Docstring actualizado (ver sección `Returns`): [Líneas 769-888](https://github.com/f-arias/DL_Track_US-Testing/blob/fix/doCalculations_custom-return-docs/DL_Track_US/gui_helpers/do_calculations.py#L769-L888)
+    *   Docstring actualizado (ver sección `Returns`): [Líneas 782-878](https://github.com/f-arias/DL_Track_US-Testing/blob/abbdab46f108c6431bc1b0600d36b0de9154ef1a/DL_Track_US/gui_helpers/do_calculations.py#L782-L878)
 
 3.  **Corrección de Sintaxis y Mejoras Menores:**
     *   Se corrigió un error de sintaxis en la sentencia `return` (una coma faltante).
@@ -36,8 +36,7 @@ Se han realizado modificaciones en la función `doCalculations_custom` ubicada e
 
 El procesamiento central de las aponeurosis, que incluye la segmentación de la imagen, la detección de contornos con `contourEdge`, el suavizado de las coordenadas con `savgol_filter`, y la creación de la máscara `ex_mask` (ROI), se encuentra principalmente en estas secciones del código:
 
-*   Procesamiento de imagen, obtención y suavizado de bordes de aponeurosis: [Líneas 970-984](https://github.com/f-arias/DL_Track_US-Testing/blob/fix/doCalculations_custom-return-docs/DL_Track_US/gui_helpers/do_calculations.py#L970-L984)
-*   Creación de la máscara de la región de interés `ex_mask`: [Líneas 987-998](https://github.com/f-arias/DL_Track_US-Testing/blob/fix/doCalculations_custom-return-docs/DL_Track_US/gui_helpers/do_calculations.py#L987-L998)
+*   Procesamiento de imagen, obtención y suavizado de bordes de aponeurosis: [Líneas 1038-1053](https://github.com/f-arias/DL_Track_US-Testing/blob/abbdab46f108c6431bc1b0600d36b0de9154ef1a/DL_Track_US/gui_helpers/do_calculations.py#L1038-L1053)
+*   Creación de la máscara de la región de interés `ex_mask`: [Líneas 1062-1072](https://github.com/f-arias/DL_Track_US-Testing/blob/abbdab46f108c6431bc1b0600d36b0de9154ef1a/DL_Track_US/gui_helpers/do_calculations.py#L1062-L1072)
 
 El propósito de estos cambios es facilitar el uso de las coordenadas de las aponeurosis y la máscara ROI para análisis y visualizaciones posteriores directamente desde la llamada a la función.
-Los permalinks se han actualizado para apuntar a la rama `fix/doCalculations_custom-return-docs` que contiene estos cambios. Se recomienda actualizarlos al hash del commit final una vez fusionado.
