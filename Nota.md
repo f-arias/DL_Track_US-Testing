@@ -17,8 +17,8 @@ Se han realizado modificaciones en la función `doCalculations_custom` ubicada e
     *   `low_y_apo`: Coordenadas Y suavizadas de la aponeurosis inferior (NumPy array).
 
     Estas variables se definen y retornan en las siguientes secciones del código:
-    *   Definición de `ex_mask` (usada para `mask_roi`): [Líneas 987-998](https://github.com/f-arias/DL_Track_US-Testing/blob/fix/doCalculations_custom-return-docs/DL_Track_US/gui_helpers/do_calculations.py#L987-L998)
-    *   Copia de variables internas para la salida (`mask_roi`, `upp_x_apo`, etc.): [Líneas 1355-1359](https://github.com/f-arias/DL_Track_US-Testing/blob/fix/doCalculations_custom-return-docs/DL_Track_US/gui_helpers/do_calculations.py#L1355-L1359)
+    *   Definición de `ex_mask` (usada para `mask_roi`): [Líneas 1062](https://github.com/f-arias/DL_Track_US-Testing/blob/b2a15fb9ab8be11295f24ef4b2b9c22cfd8f9194/DL_Track_US/gui_helpers/do_calculations.py#L1062)
+    *   Copia de variables internas para la salida (`mask_roi`, `upp_x_apo`, etc.): [Líneas 1355-1360](https://github.com/f-arias/DL_Track_US-Testing/blob/b2a15fb9ab8be11295f24ef4b2b9c22cfd8f9194/DL_Track_US/gui_helpers/do_calculations.py#L1355-L1360)
     *   Sentencia `return` actualizada (9 variables en total): [Líneas 1361-1371](https://github.com/f-arias/DL_Track_US-Testing/blob/fix/doCalculations_custom-return-docs/DL_Track_US/gui_helpers/do_calculations.py#L1361-L1371)
     *   Sentencias `return None` actualizadas para devolver 9 `None`s en caso de fallo:
         *   [Línea 932](https://github.com/f-arias/DL_Track_US-Testing/blob/fix/doCalculations_custom-return-docs/DL_Track_US/gui_helpers/do_calculations.py#L932)
