@@ -1,30 +1,43 @@
 # Nota de Cambios en `doCalculations_custom`
 
-Se han realizado modificaciones en la función `doCalculations_custom` ubicada en el archivo `DL_Track_US/gui_helpers/do_calculations.py` para mejorar el acceso a los datos de las aponeurosis.
+Se han realizado modificaciones en la función `doCalculations_custom` ubicada en el archivo `DL_Track_US/gui_helpers/do_calculations.py` para mejorar el acceso a los datos de las aponeurosis y la región de interés muscular.
 
 ## Cambios Realizados:
 
 1.  **Nuevas Variables de Salida:**
-    Se han añadido cuatro nuevas variables al `return` de la función. Estas variables exponen las coordenadas X e Y procesadas y suavizadas de las aponeurosis superficial (superior) e profunda (inferior), que anteriormente solo se usaban internamente.
+    Se han añadido cinco nuevas variables al `return` de la función. Estas variables exponen:
+    *   Las coordenadas X e Y procesadas y suavizadas de las aponeurosis superficial (superior) e profunda (inferior).
+    *   Una máscara binaria (`mask_roi`) que define la región de interés entre las aponeurosis.
 
-    *   `upp_x_apo`: Coordenadas X de la aponeurosis superior.
-    *   `upp_y_apo`: Coordenadas Y suavizadas de la aponeurosis superior.
-    *   `low_x_apo`: Coordenadas X de la aponeurosis inferior.
-    *   `low_y_apo`: Coordenadas Y suavizadas de la aponeurosis inferior.
+    Las variables son:
+    *   `mask_roi`: Máscara binaria (NumPy array) de la región muscular.
+    *   `upp_x_apo`: Coordenadas X de la aponeurosis superior (NumPy array).
+    *   `upp_y_apo`: Coordenadas Y suavizadas de la aponeurosis superior (NumPy array).
+    *   `low_x_apo`: Coordenadas X de la aponeurosis inferior (NumPy array).
+    *   `low_y_apo`: Coordenadas Y suavizadas de la aponeurosis inferior (NumPy array).
 
     Estas variables se definen y retornan en las siguientes secciones del código:
-    *   Copia de variables internas para la salida: [Líneas 1314-1318](https://github.com/f-arias/DL_Track_US-Testing/blob/2bb02b13cfbe4265f2accba36a0a9447e19bc4d3/DL_Track_US/gui_helpers/do_calculations.py#L1314-L1318)
-    *   Sentencia `return` actualizada con las nuevas variables: [Líneas 1320-1329](https://github.com/f-arias/DL_Track_US-Testing/blob/2bb02b13cfbe4265f2accba36a0a9447e19bc4d3/DL_Track_US/gui_helpers/do_calculations.py#L1320-L1329)
-    *   Sentencia `return None` actualizada para mantener consistencia en caso de fallo: [Línea 1333](https://github.com/f-arias/DL_Track_US-Testing/blob/2bb02b13cfbe4265f2accba36a0a9447e19bc4d3/DL_Track_US/gui_helpers/do_calculations.py#L1333)
+    *   Definición de `ex_mask` (usada para `mask_roi`): [Líneas 987-998](https://github.com/f-arias/DL_Track_US-Testing/blob/fix/doCalculations_custom-return-docs/DL_Track_US/gui_helpers/do_calculations.py#L987-L998)
+    *   Copia de variables internas para la salida (`mask_roi`, `upp_x_apo`, etc.): [Líneas 1355-1359](https://github.com/f-arias/DL_Track_US-Testing/blob/fix/doCalculations_custom-return-docs/DL_Track_US/gui_helpers/do_calculations.py#L1355-L1359)
+    *   Sentencia `return` actualizada (9 variables en total): [Líneas 1361-1371](https://github.com/f-arias/DL_Track_US-Testing/blob/fix/doCalculations_custom-return-docs/DL_Track_US/gui_helpers/do_calculations.py#L1361-L1371)
+    *   Sentencias `return None` actualizadas para devolver 9 `None`s en caso de fallo:
+        *   [Línea 932](https://github.com/f-arias/DL_Track_US-Testing/blob/fix/doCalculations_custom-return-docs/DL_Track_US/gui_helpers/do_calculations.py#L932)
+        *   [Línea 1375](https://github.com/f-arias/DL_Track_US-Testing/blob/fix/doCalculations_custom-return-docs/DL_Track_US/gui_helpers/do_calculations.py#L1375)
 
 2.  **Actualización del Docstring:**
-    El docstring de la función ha sido expandido para incluir la descripción detallada de las nuevas variables retornadas, explicando qué representa cada una.
-    *   Docstring actualizado: [Líneas 770-861](https://github.com/f-arias/DL_Track_US-Testing/blob/2bb02b13cfbe4265f2accba36a0a9447e19bc4d3/DL_Track_US/gui_helpers/do_calculations.py#L770-L861)
+    El docstring de la función `doCalculations_custom` ha sido expandido para incluir la descripción detallada de las cinco nuevas variables retornadas y para asegurar que la tupla de retorno refleje nueve elementos.
+    *   Docstring actualizado (ver sección `Returns`): [Líneas 769-888](https://github.com/f-arias/DL_Track_US-Testing/blob/fix/doCalculations_custom-return-docs/DL_Track_US/gui_helpers/do_calculations.py#L769-L888)
 
-## Puntos Clave del Procesamiento de Aponeurosis:
+3.  **Corrección de Sintaxis y Mejoras Menores:**
+    *   Se corrigió un error de sintaxis en la sentencia `return` (una coma faltante).
+    *   Se mejoró la legibilidad de una condición booleana (`if filter_fasc`).
 
-El procesamiento central de las aponeurosis, que incluye la segmentación de la imagen, la detección de contornos con `contourEdge`, y el suavizado de las coordenadas con `savgol_filter`, se encuentra en esta sección del código:
+## Puntos Clave del Procesamiento de Aponeurosis y ROI:
 
-*   Procesamiento de imagen y obtención de bordes de aponeurosis: [Líneas 911-1020](https://github.com/f-arias/DL_Track_US-Testing/blob/2bb02b13cfbe4265f2accba36a0a9447e19bc4d3/DL_Track_US/gui_helpers/do_calculations.py#L911-L1020)
+El procesamiento central de las aponeurosis, que incluye la segmentación de la imagen, la detección de contornos con `contourEdge`, el suavizado de las coordenadas con `savgol_filter`, y la creación de la máscara `ex_mask` (ROI), se encuentra principalmente en estas secciones del código:
 
-El propósito de estos cambios es facilitar el uso de las coordenadas de las aponeurosis para análisis y visualizaciones posteriores directamente desde la llamada a la función.
+*   Procesamiento de imagen, obtención y suavizado de bordes de aponeurosis: [Líneas 970-984](https://github.com/f-arias/DL_Track_US-Testing/blob/fix/doCalculations_custom-return-docs/DL_Track_US/gui_helpers/do_calculations.py#L970-L984)
+*   Creación de la máscara de la región de interés `ex_mask`: [Líneas 987-998](https://github.com/f-arias/DL_Track_US-Testing/blob/fix/doCalculations_custom-return-docs/DL_Track_US/gui_helpers/do_calculations.py#L987-L998)
+
+El propósito de estos cambios es facilitar el uso de las coordenadas de las aponeurosis y la máscara ROI para análisis y visualizaciones posteriores directamente desde la llamada a la función.
+Los permalinks se han actualizado para apuntar a la rama `fix/doCalculations_custom-return-docs` que contiene estos cambios. Se recomienda actualizarlos al hash del commit final una vez fusionado.
