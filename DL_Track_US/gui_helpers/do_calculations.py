@@ -877,7 +877,7 @@ def doCalculations_custom (
             mostrando la imagen original, las aponeurosis y los fascículos detectados.
             None si falla el análisis.
     """
-
+    """
     Notes
     -----
     For more detailed documentation, see the respective functions
