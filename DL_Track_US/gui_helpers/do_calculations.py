@@ -335,7 +335,7 @@ def doCalculations(  # TODO adapt docstring
     # aponeurosis_inf = [np.array([x_coords_inf]), np.array([y_coords_inf])],
     # fig = <matplotlib.figure.Figure object>
     """
-    matplotlib.use("Agg")
+    #matplotlib.use("Agg")
 
     # Get settings
     dic = dictionary
@@ -912,7 +912,7 @@ def doCalculations_custom (
     [1410, 1320, 1551, 1351, 1149, ..., 885, 937, 705, 869, 507]
     348.1328577
     """
-    matplotlib.use("Agg")
+    #matplotlib.use("Agg")
 
     # Get settings
     dic = dictionary
