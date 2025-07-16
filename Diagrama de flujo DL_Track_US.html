@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diagrama de Flujo Detallado - Análisis Automático en DL_Track_US</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Roboto, Arial, sans-serif;
+            background-color: #f8f9fa;
+            color: #212529;
+            display: flex;
+            justify-content: center;
+            padding: 30px;
+            line-height: 1.6;
+        }
+        .flowchart-container {
+            max-width: 900px;
+            width: 100%;
+        }
+        .node {
+            background-color: #ffffff;
+            border: 1px solid #dee2e6;
+            border-left: 5px solid #007bff;
+            border-radius: 8px;
+            padding: 25px;
+            margin: 25px 0;
+            text-align: left;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .node:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.12);
+        }
+        .node h3 {
+            margin-top: 0;
+            color: #0056b3;
+            border-bottom: 2px solid #e9ecef;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+         .node h3 .icon {
+            margin-right: 15px;
+            font-size: 24px;
+        }
+        .node ul {
+            margin-top: 15px;
+            padding-left: 25px;
+            list-style-type: none;
+        }
+        .node li {
+            margin-bottom: 10px;
+            position: relative;
+        }
+        .node li::before {
+            content: '✓';
+            position: absolute;
+            left: -25px;
+            color: #28a745;
+            font-weight: bold;
+        }
+        .arrow {
+            text-align: center;
+            font-size: 30px;
+            color: #adb5bd;
+            margin: -10px 0;
+            font-weight: bold;
+        }
+        .start-end {
+            border-left-color: #28a745;
+        }
+        .start-end h3 { color: #155724; }
+        .process {
+            border-left-color: #6c757d;
+        }
+        .process h3 { color: #343a40; }
+        .io {
+            border-left-color: #17a2b8;
+        }
+        .io h3 { color: #0c5460; }
+        .decision {
+            border-left-color: #fd7e14;
+        }
+        .decision h3 { color: #994E00; }
+        .highlight {
+            border-left-color: #ffc107;
+            background-color: #fffbeb;
+        }
+        .highlight p { font-weight: 500; }
+        .highlight h3 { color: #856404; }
+        
+        .loop-block {
+            border: 2px dashed #007bff;
+            padding: 20px 30px;
+            border-radius: 10px;
+            background-color: #f0f8ff;
+            margin-top: 30px;
+        }
+        .loop-title {
+            text-align: center;
+            font-weight: bold;
+            font-size: 1.2em;
+            color: #0056b3;
+            margin-bottom: 20px;
+        }
+        code {
+            background-color: #e9ecef;
+            color: #c7254e;
+            padding: 3px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.95em;
+        }
+    </style>
+</head>
+<body>
+    <div class="flowchart-container">
+        
+        <div class="node start-end">
+            <h3><span class="icon">▶️</span>Inicio: Interacción del Usuario</h3>
+            <p>El proceso comienza cuando el usuario, en la interfaz gráfica principal de <code>DL_Track_US</code>, hace clic en el botón <strong>"Analyze Batch"</strong>.</p>
+            <ul>
+                <li>El método asociado a este botón es <code>self.analyzeBatch()</code>.</li>
+            </ul>
+        </div>
+
+        <div class="arrow">&darr;</div>
+
+        <div class="node process">
+            <h3><span class="icon">⚙️</span>Preparación del Análisis: Método <code>analyzeBatch()</code></h3>
+            <p>Este método actúa como el centro de control inicial. No realiza el análisis directamente, sino que lo prepara y delega.</p>
+            <ul>
+                <li>Recolecta todas las configuraciones de la GUI: rutas de archivos, tipo de imagen, parámetros de análisis (del `settings.json`), etc.</li>
+                <li>Inicia un nuevo hilo de ejecución (<code>threading.Thread</code>) para no congelar la interfaz gráfica.</li>
+                <li>El objetivo (<code>target</code>) de este hilo es la función <strong><code>calculateBatch()</code></strong>, a la cual le pasa todas las configuraciones como argumentos.</li>
+            </ul>
+        </div>
+
+        <div class="arrow">&darr;</div>
+
+        <div class="loop-block">
+            <div class="loop-title">🔄 Bucle Principal en <code>calculateBatch()</code>: Procesamiento por Imagen</div>
+            
+            <div class="node io">
+                <h3><span class="icon">🖼️</span>Paso 1: Carga y Preprocesamiento de Imagen Individual</h3>
+                <p>Para cada ruta de imagen encontrada, se llama a la función <code>importAndReshapeImage()</code>.</p>
+                <ul>
+                    <li><strong>Carga:</strong> <code>cv2.imread(imagepath, 1)</code> carga la imagen completa a color (3 canales).</li>
+                    <li><strong>Flip (Opcional):</strong> Si se indica, la imagen se invierte horizontalmente con <code>np.fliplr()</code>.</li>
+                    <li><strong>Copia para Visualización:</strong> Se guarda una copia (<code>img_copy</code>) de la imagen antes del redimensionamiento, que será la base para la figura final.</li>
+                    <li><strong>Formato para el Modelo:</strong> La imagen se transforma a una forma 4D <code>(1, 512, 512, 3)</code> y se normaliza dividiendo por <code>255.0</code>. Esta es la variable <code>img</code> que se pasará al modelo.</li>
+                </ul>
+            </div>
+            
+            <div class="node highlight">
+                <h3><span class="icon">⚠️</span>Punto Crítico: Ausencia de Recorte del Marco</h3>
+                <p>El flujo estándar <strong>NO incluye una etapa de recorte</strong>. <code>importAndReshapeImage</code> redimensiona la imagen completa, incluyendo cualquier marco de información (datos del paciente, barras de escala, etc.). Esto implica que el usuario debe proporcionar imágenes ya limpias para obtener resultados óptimos.</p>
+            </div>
+
+            <div class="arrow">&darr;</div>
+
+            <div class="node decision">
+                <h3><span class="icon">📏</span>Paso 2 (Condicional): Calibración de Escala</h3>
+                <p>Si el método de escalado seleccionado es "Barra", se llama a <code>calibrateDistanceStatic()</code>.</p>
+                 <ul>
+                    <li>Esta función analiza una porción del lado derecho de la imagen <strong>original sin redimensionar</strong> (<code>nonflipped_img</code>) para detectar las barras blancas de la escala.</li>
+                    <li>Calcula la distancia en píxeles (<code>calib_dist</code>) que corresponde a una distancia conocida (e.g., 10 mm).</li>
+                    <li><strong>Importante:</strong> Esta función solo devuelve un valor numérico, no una imagen recortada.</li>
+                </ul>
+            </div>
+
+            <div class="arrow">&darr;</div>
+
+            <div class="node process">
+                <h3><span class="icon">🧠</span>Paso 3: Análisis Central - <code>doCalculations()</code></h3>
+                <p>Este es el corazón del algoritmo, donde ocurren la predicción y los cálculos geométricos.</p>
+                <ol>
+                    <li><strong>Predicción CNN:</strong>
+                        <ul>
+                            <li>Se ejecuta <code>model_apo.predict(img)</code> y <code>model_fasc.predict(img)</code>.</li>
+                            <li>Las máscaras de probabilidad resultantes se umbralizan para crear máscaras binarias.</li>
+                        </ul>
+                    </li>
+                    <li><strong>Refinamiento de Aponeurosis:</strong>
+                        <ul>
+                            <li><code>cv2.findContours</code> sobre la máscara para obtener contornos crudos.</li>
+                            <li>Filtrado por longitud y ordenamiento con <code>sortContours()</code>.</li>
+                            <li>Esqueletización (<code>skeletonize</code>) para obtener líneas de 1 píxel de grosor, seguido de operaciones morfológicas (<code>dilate</code>, <code>erode</code>) para limpiar y conectar.</li>
+                            <li>Se extraen los contornos finales y limpios (<code>contoursE</code>).</li>
+                        </ul>
+                    </li>
+                    <li><strong>Extracción de Bordes y Modelado Matemático:</strong>
+                        <ul>
+                            <li>Se llama a <code>contourEdge()</code> sobre <code>contoursE</code> para obtener los puntos <code>(x, y)</code> de los bordes relevantes.</li>
+                            <li>Se suavizan estos bordes con <code>savgol_filter()</code>, obteniendo <code>upp_y_new</code> y <code>low_y_new</code>.</li>
+                            <li>Se ajusta un polinomio de grado 1 (<code>np.polyfit</code>) a estos bordes suavizados. Esto crea un modelo matemático (línea recta) para cada aponeurosis.</li>
+                        </ul>
+                    </li>
+                    <li><strong>Cálculo de Parámetros:</strong>
+                        <ul>
+                            <li>Se mide el grosor muscular (<code>midthick</code>) entre las aponeurosis suavizadas.</li>
+                            <li>Se inicia un bucle para cada fascículo detectado. Para cada uno:
+                                <ul>
+                                    <li>Se ajusta una línea recta.</li>
+                                    <li>Se calculan las intersecciones de esta línea con las líneas **extrapoladas** de las aponeurosis.</li>
+                                    <li>Se calcula la longitud del fascículo (FL) y el ángulo de pennación (PA).</li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </li>
+                     <li><strong>Generación de la Figura de Salida:</strong>
+                        <ul>
+                           <li>Se crea una figura de Matplotlib (<code>fig</code>).</li>
+                           <li>Se dibuja la <code>img_copy</code> (la imagen de visualización).</li>
+                           <li>Se dibujan las aponeurosis usando las coordenadas suavizadas <code>(upp_x, upp_y_new)</code> y <code>(low_x, low_y_new)</code>.</li>
+                           <li>Se dibujan los fascículos calculados.</li>
+                        </ul>
+                    </li>
+                </ol>
+            </div>
+
+            <div class="arrow">&darr;</div>
+
+            <div class="node io">
+                <h3><span class="icon">💾</span>Paso 4: Agregación de Resultados de la Imagen Actual</h3>
+                <ul>
+                    <li>Los resultados numéricos (listas de FL, PA, MT) se añaden a listas maestras (<code>fascicles_all</code>, etc.).</li>
+                    <li>La figura <code>fig</code> generada por <code>doCalculations()</code> se guarda en un archivo PDF común (<code>ResultImages.pdf</code>).</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="arrow">&darr;</div>
+        
+        <div class="node process">
+             <h3><span class="icon">📊</span>Paso 5: Post-Procesamiento Final</h3>
+            <p>Después de que el bucle ha terminado de procesar todas las imágenes, se realizan operaciones finales sobre el conjunto completo de datos.</p>
+            <ul>
+                <li>Se aplica un filtro Hampel (<code>hampelFilterList</code>) a las series de datos de FL y PA para eliminar valores atípicos.</li>
+            </ul>
+        </div>
+
+        <div class="arrow">&darr;</div>
+
+        <div class="node io">
+             <h3><span class="icon">📄</span>Paso 6: Exportación Final de Datos</h3>
+            <p>Se llama a la función <code>exportToExcel()</code>.</p>
+            <ul>
+                <li>Organiza todos los datos brutos y filtrados en un DataFrame de Pandas.</li>
+                <li>Guarda el DataFrame en un único archivo <code>.xlsx</code> en la carpeta de resultados.</li>
+            </ul>
+        </div>
+        
+        <div class="arrow">&darr;</div>
+        
+        <div class="node start-end">
+            <h3><span class="icon">🏁</span>Fin del Proceso</h3>
+        </div>
+
+    </div>
+</body>
+</html>
