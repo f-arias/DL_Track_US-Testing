@@ -1,7 +1,7 @@
 # Aspectos Importantes de la Librería DL_Track_US
 
 Este documento resume los componentes clave y el flujo de ejecución para el análisis automático de imágenes estáticas dentro del paquete `DL_Track_US`.
-El diagrama de flujo se encuentra en: 
+El diagrama de flujo se encuentra en Zotero/ Su Articulo de revista Academica/ Archivos adjuntos.
 ---
 
 ### 1. Interfaz Gráfica de Usuario (GUI)
