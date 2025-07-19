@@ -1050,7 +1050,8 @@ def doCalculations_custom (
         #Este filtro es ideal para suavizar datos secuenciales, los suaviza conservando la forma y curvatura general
         upp_y_new = savgol_filter(upp_y, 81, 2)  # window size 51, polynomial 3
         low_y_new = savgol_filter(low_y, 81, 2)
-
+    
+    # Creacion de mascara ROI que solo contenga el Musculo limitado por sus aponeurosis
         """
         Importante!
         Se dejara comentado las lineas de codigo originales que crean la mascara del ROI del musculo.
@@ -1070,22 +1071,21 @@ def doCalculations_custom (
 
         #   ex_mask[:ymin, ii] = 0    #Sobre la apo. superficial
         #    ex_mask[ymax:, ii] = 0    #Debajo de la apo. profunda
-        #    ex_mask[ymin:ymax, ii] = 255    #Entre las apos.
+        #    ex_mask[ymin:ymax, ii] = 255    #Entre las apos.        
         
-        # Creacion de mascara ROI que solo contenga el Musculo limitado por sus aponeurosis
         ex_mask = np.zeros(thresh.shape, np.uint8)
 
         # Crear funciones de interpolación para ambas aponeurosis
         f_upp = np.poly1d(np.polyfit(upp_x, upp_y_new, 2))
         f_low = np.poly1d(np.polyfit(low_x, low_y_new, 2))
 
-        # Determinar el rango x superpuesto
-        start_x = int(max(np.min(upp_x), np.min(low_x)))
+        # Determinar el rango x superpuesto, que coincida con low_x e upp_x
+        start_x = int(max(np.min(upp_x), np.min(low_x)))    
         end_x = int(min(np.max(upp_x), np.max(low_x)))
 
         for x in range(start_x, end_x):
-            ymin = int(np.floor(f_upp(x)))
-            ymax = int(np.ceil(f_low(x)))
+            ymin = int(np.floor(f_upp(x)))    #floor redondeo a entero hacia abajo
+            ymax = int(np.ceil(f_low(x)))     #ceil redondeo a entero hacia arriba
 
             # Asegurarse de que ymin e ymax estén dentro de los límites de la imagen
             ymin = max(0, ymin)
