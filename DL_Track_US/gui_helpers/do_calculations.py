@@ -1054,11 +1054,11 @@ def doCalculations_custom (
         # Creacion de mascara ROI que solo contenga el Musculo limitado por sus aponeurosis
         ex_mask = np.zeros(thresh.shape, np.uint8)
 
-        # Create interpolation functions for both aponeuroses
+        # Crear funciones de interpolación para ambas aponeurosis
         f_upp = np.poly1d(np.polyfit(upp_x, upp_y_new, 2))
         f_low = np.poly1d(np.polyfit(low_x, low_y_new, 2))
 
-        # Determine the overlapping x-range
+        # Determinar el rango x superpuesto
         start_x = int(max(np.min(upp_x), np.min(low_x)))
         end_x = int(min(np.max(upp_x), np.max(low_x)))
 
@@ -1066,7 +1066,7 @@ def doCalculations_custom (
             ymin = int(np.floor(f_upp(x)))
             ymax = int(np.ceil(f_low(x)))
 
-            # Ensure ymin and ymax are within the image bounds
+            # Asegurarse de que ymin e ymax estén dentro de los límites de la imagen
             ymin = max(0, ymin)
             ymax = min(ex_mask.shape[0], ymax)
 
