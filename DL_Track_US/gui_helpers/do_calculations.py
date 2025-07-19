@@ -1051,6 +1051,27 @@ def doCalculations_custom (
         upp_y_new = savgol_filter(upp_y, 81, 2)  # window size 51, polynomial 3
         low_y_new = savgol_filter(low_y, 81, 2)
 
+        """
+        Importante!
+        Se dejara comentado las lineas de codigo originales que crean la mascara del ROI del musculo.
+        Mascara de 0 y 255 que contiene el area musculoesqueletica de interes.
+        En caso que una aponeurosis sea mas larga (en el x mayoritariamente) esto lo
+        trabaja por omision, es decir, solo considera lo que es certero predicho por la CNN
+        el area donde las aponeurosis no coincidan en el eje x, se omite por el rellenado
+        del area.
+        """
+        #ex_mask = np.zeros(thresh.shape, np.uint8)
+        #ex_1 = 0
+        #ex_2 = np.minimum(len(low_x), len(upp_x))
+
+        #for ii in range(ex_1, ex_2):    #Barrido columna por columna
+        #    ymin = int(np.floor(upp_y_new[ii]))
+        #    ymax = int(np.ceil(low_y_new[ii]))
+
+        #   ex_mask[:ymin, ii] = 0    #Sobre la apo. superficial
+        #    ex_mask[ymax:, ii] = 0    #Debajo de la apo. profunda
+        #    ex_mask[ymin:ymax, ii] = 255    #Entre las apos.
+        
         # Creacion de mascara ROI que solo contenga el Musculo limitado por sus aponeurosis
         ex_mask = np.zeros(thresh.shape, np.uint8)
 
