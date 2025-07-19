@@ -1052,24 +1052,25 @@ def doCalculations_custom (
         low_y_new = savgol_filter(low_y, 81, 2)
 
         # Creacion de mascara ROI que solo contenga el Musculo limitado por sus aponeurosis
-        """
-        Mascara de 0 y 255 que contiene el area musculoesqueletica de interes.
-        En caso que una aponeurosis sea mas larga (en el x mayoritariamente) esto lo
-        trabaja por omision, es decir, solo considera lo que es certero predicho por la CNN
-        el area donde las aponeurosis no coincidan en el eje x, se omite por el rellenado
-        del area.
-        """
         ex_mask = np.zeros(thresh.shape, np.uint8)
-        ex_1 = 0
-        ex_2 = np.minimum(len(low_x), len(upp_x))
 
-        for ii in range(ex_1, ex_2):    #Barrido columna por columna
-            ymin = int(np.floor(upp_y_new[ii]))
-            ymax = int(np.ceil(low_y_new[ii]))
+        # Create interpolation functions for both aponeuroses
+        f_upp = np.poly1d(np.polyfit(upp_x, upp_y_new, 2))
+        f_low = np.poly1d(np.polyfit(low_x, low_y_new, 2))
 
-            ex_mask[:ymin, ii] = 0    #Sobre la apo. superficial
-            ex_mask[ymax:, ii] = 0    #Debajo de la apo. profunda
-            ex_mask[ymin:ymax, ii] = 255    #Entre las apos.
+        # Determine the overlapping x-range
+        start_x = int(max(np.min(upp_x), np.min(low_x)))
+        end_x = int(min(np.max(upp_x), np.max(low_x)))
+
+        for x in range(start_x, end_x):
+            ymin = int(np.floor(f_upp(x)))
+            ymax = int(np.ceil(f_low(x)))
+
+            # Ensure ymin and ymax are within the image bounds
+            ymin = max(0, ymin)
+            ymax = min(ex_mask.shape[0], ymax)
+
+            ex_mask[ymin:ymax, x] = 255
 
 #Hasta aqui es suficiente, el resto usa las variable de apo. idealizando y extrapolando para los fasciculos
 #------------------------------------------------------------------------------------------------
