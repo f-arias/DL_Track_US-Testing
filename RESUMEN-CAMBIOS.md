@@ -148,7 +148,107 @@ Se han realizado modificaciones en la función `doCalculations_custom` ubicada e
         ex_mask[ymin:ymax, x] = 255
     ```
     Este cambio asegurará que la máscara se genere correctamente, alineándose con las aponeurosis en la imagen original.
+    Este método es más robusto y se basa en un **modelo matemático** de las aponeurosis en lugar de los puntos crudos.
 
+    ---
+    
+    ### Análisis del Código Original vs Actualizado
+    ```python
+    # ex_mask = np.zeros(thresh.shape, np.uint8)
+    # ex_1 = 0
+    # ex_2 = np.minimum(len(low_x), len(upp_x))
+    # 
+    # for ii in range(ex_1, ex_2):    #Barrido columna por columna
+    #     ymin = int(np.floor(upp_y_new[ii]))
+    #     ymax = int(np.ceil(low_y_new[ii]))
+    # 
+    #     ex_mask[:ymin, ii] = 0    #Sobre la apo. superficial
+    #     ex_mask[ymax:, ii] = 0    #Debajo de la apo. profunda
+    #     ex_mask[ymin:ymax, ii] = 255    #Entre las apos.```
+    
+    *   **Lógica Principal:** Este método es muy directo. Funciona **iterando sobre los índices** de los arrays de las aponeurosis.
+    *   **`ex_2 = np.minimum(len(low_x), len(upp_x))`**: Esta es la línea **crítica**. Determina el rango del bucle. El bucle solo se ejecutará mientras haya puntos `(x, y)` en **ambas** aponeurosis. Si una aponeurosis es más corta que la otra en el eje X, el área donde no se superponen **no se rellenará en la máscara**. Se basa estrictamente en los puntos detectados.
+    *   **`for ii in range(ex_1, ex_2)`**: Recorre las aponeurosis "sincronizadamente" por su índice `ii`. Esto **asume implícitamente** que `upp_x[ii]` y `low_x[ii]` son coordenadas X muy cercanas o idénticas, lo cual no siempre es garantizado si las aponeurosis no son perfectamente paralelas.
+    *   **`ymin = int(np.floor(upp_y_new[ii]))` y `ymax = ...`**: Para cada índice `ii`, toma el valor Y de la aponeurosis superior e inferior.
+    *   **`ex_mask[ymin:ymax, ii] = 255`**: Rellena la columna vertical (`ii`) entre esos dos puntos Y.
+    
+    **Ventajas del método original:**
+    *   Simple y rápido.
+    *   No "inventa" datos; solo usa los puntos directamente detectados.
+    
+    **Desventajas del método original:**
+    *   **Frágil si las aponeurosis no se superponen perfectamente en X:** Si la aponeurosis superior va de x=50 a x=400 y la inferior de x=80 a x=450, solo rellenará el área entre x=80 y x=400, descartando los extremos.
+    *   **Sensible a la alineación de los arrays:** Depende de que los índices de `upp_x` y `low_x` se correspondan espacialmente, lo cual puede no ser perfecto.
+    
+    ---
+    
+    ### Análisis de tu Nuevo Código
+    
+    ```python
+    ex_mask = np.zeros(thresh.shape, np.uint8)
+    
+    # Crear funciones de interpolación para ambas aponeurosis
+    f_upp = np.poly1d(np.polyfit(upp_x, upp_y_new, 2))
+    f_low = np.poly1d(np.polyfit(low_x, low_y_new, 2))
+    
+    # Determinar el rango x superpuesto, que coincida con low_x e upp_x
+    start_x = int(max(np.min(upp_x), np.min(low_x)))    
+    end_x = int(min(np.max(upp_x), np.max(low_x)))
+    
+    for x in range(start_x, end_x):
+        ymin = int(np.floor(f_upp(x)))    #floor redondeo a entero hacia abajo
+        ymax = int(np.ceil(f_low(x)))     #ceil redondeo a entero hacia arriba
+    
+        # Asegurarse de que ymin e ymax estén dentro de los límites de la imagen
+        ymin = max(0, ymin)
+        ymax = min(ex_mask.shape[0], ymax)
+    
+        ex_mask[ymin:ymax, x] = 255
+    ```
+    
+    
+    **Desglose línea por línea:**
+    
+    1.  **`ex_mask = np.zeros(thresh.shape, np.uint8)`**: Igual que el original, inicializa una máscara vacía (negra).
+    
+    2.  **`f_upp = np.poly1d(np.polyfit(upp_x, upp_y_new, 2))`**:
+        *   **`np.polyfit(upp_x, upp_y_new, 2)`**: Toma todos los puntos `(x, y)` de la aponeurosis superior suavizada y encuentra los coeficientes `(a, b, c)` de la **parábola** (`ax^2 + bx + c`) que mejor se ajusta a ellos. Usar un polinomio de grado 2 permite modelar una ligera curvatura.
+        *   **`np.poly1d(...)`**: Convierte estos coeficientes en un objeto de función `f_upp` que se puede llamar. Ahora puedes hacer `f_upp(x)` para obtener la coordenada Y estimada en la curva de la aponeurosis superior para cualquier valor de X.
+        *   **`f_low = ...`**: Hace exactamente lo mismo para la aponeurosis inferior.
+    
+    3.  **`start_x = int(max(np.min(upp_x), np.min(low_x)))`**:
+        *   `np.min(upp_x)`: Encuentra la coordenada X más pequeña de la aponeurosis superior.
+        *   `np.min(low_x)`: Encuentra la X más pequeña de la inferior.
+        *   `max(...)`: Toma el **máximo** de estos dos mínimos. Esto define el punto de inicio del **rango de superposición**. Es la coordenada X más a la izquierda donde ambas aponeurosis existen.
+    
+    4.  **`end_x = int(min(np.max(upp_x), np.max(low_x)))`**:
+        *   `np.max(upp_x)`: Encuentra la X más grande de la superior.
+        *   `np.max(low_x)`: Encuentra la X más grande de la inferior.
+        *   `min(...)`: Toma el **mínimo** de estos dos máximos. Esto define el punto final del **rango de superposición**. Es la coordenada X más a la derecha donde ambas aponeurosis todavía existen.
+    
+    5.  **`for x in range(start_x, end_x):`**: Este es el cambio fundamental. El bucle ya no itera sobre los índices de los arrays, sino que hace un **barrido columna por columna (píxel por píxel) a lo largo del eje X** dentro del rango de superposición que acabas de calcular.
+    
+    6.  **`ymin = int(np.floor(f_upp(x)))` y `ymax = int(np.ceil(f_low(x)))`**:
+        *   Para cada columna `x`, **pregunta a los modelos polinómicos** (`f_upp` y `f_low`) cuál debería ser la coordenada Y de las aponeurosis en ese punto exacto.
+        *   Esto proporciona valores Y **suaves e interpolados**, eliminando la irregularidad de los datos originales.
+    
+    7.  **`ymin = max(0, ymin)` y `ymax = min(ex_mask.shape[0], ymax)`**:
+        *   Una salvaguarda importante. Se asegura de que los valores Y calculados no se salgan de los límites verticales de la imagen, lo que podría causar un error.
+    
+    8.  **`ex_mask[ymin:ymax, x] = 255`**: Igual que en el original, rellena la columna vertical `x` entre las coordenadas Y calculadas, creando la máscara del músculo.
+    
+    **Ventajas de tu nuevo método:**
+    *   **Más Robusto:** No depende de que los arrays de las aponeurosis estén perfectamente alineados.
+    *   **Manejo de Gaps:** Si hay pequeños huecos en los datos de una aponeurosis, el ajuste polinómico los "rellenará", creando una curva continua.
+    *   **Suavizado Implícito:** El uso de un modelo polinómico crea un borde de máscara mucho más suave que el método original.
+    *   **Rango de Superposición Explícito:** Calcula de forma explícita y correcta el área donde ambas aponeurosis están presentes.
+    
+    **Posibles Consideraciones/Desventajas:**
+    *   **Rendimiento:** `polyfit` puede ser ligeramente más lento que el bucle directo, pero para el tamaño de estos datos, la diferencia es insignificante.
+    *   **Sobreajuste con Polinomios de Grado Alto:** Has usado grado 2 (parábola), lo cual es una excelente elección para modelar la curvatura suave de las aponeurosis. Un grado mucho más alto podría "sobreajustarse" al ruido. El grado 2 es un buen equilibrio.
+    *   **Extremos:** El ajuste polinómico puede comportarse de manera extraña en los extremos del rango de datos si no hay suficientes puntos. Sin embargo, al limitar el bucle a `range(start_x, end_x)`, estás mitigando este riesgo al trabajar solo en la zona de confianza.
+    
+    **En resumen, tu cambio es una mejora significativa.** Has reemplazado un método simple pero frágil por un enfoque basado en modelos que es más robusto, preciso y menos susceptible a las imperfecciones de los datos de entrada.
 
 ## Puntos Clave del Procesamiento de Aponeurosis y ROI:
 
