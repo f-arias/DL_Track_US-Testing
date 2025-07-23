@@ -1282,7 +1282,7 @@ def doCalculations_custom (
             low_y_new,
             marker="p",
             color="darkgreen",    #Verde osuro
-            linewidth=2,
+            linewidth=1,    #Grosor 1, representacion lo más real posible
             alpha=0.8,
             label="Aponeurosis Profunda",
         )
@@ -1291,7 +1291,7 @@ def doCalculations_custom (
             upp_y_new,
             marker="p",
             color="blue",    #Azul
-            linewidth=2,
+            linewidth=1,    #Grosor 1, representacion lo más real posible
             alpha=0.8,
             label="Aponeurosis Superficial",
         )
