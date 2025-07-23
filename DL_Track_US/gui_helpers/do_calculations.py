@@ -843,47 +843,44 @@ def doCalculations_custom (
         Si el análisis falla (ej., se detectan menos de dos aponeurosis), se devuelve una
         tupla de nueve valores `None`.
 
-        0. fasc_l : list de float or None
+        [0]. fasc_l : list de float or None
             Una lista con las longitudes calculadas para cada fascículo válido. Las unidades
             son píxeles, o milímetros si se proporciona `calib_dist`. None si falla el análisis.
-        1. pennation : list de float or None
+        [1]. pennation : list de float or None
             Una lista con los ángulos de pennación calculados (en grados) para cada
             fascículo correspondiente en `fasc_l`. None si falla el análisis.
-        2. x_low : list de int or None
+        [2]. x_low : list de int or None
             Una lista de las coordenadas X de los puntos de inserción de cada fascículo en la
             **aponeurosis profunda (inferior)**. None si falla el análisis.
-        3. x_high : list de int or None
+        [3]. x_high : list de int or None
             Una lista de las coordenadas X de los puntos de inserción de cada fascículo en la
             **aponeurosis superficial (superior)**. None si falla el análisis.
-        4. midthick : float or None
+        [4]. midthick : float or None
             El grosor muscular calculado en la región central de la imagen. Las unidades
             son píxeles, o milímetros si se proporciona `calib_dist`. None si falla el análisis.
-        5. mask_roi : np.ndarray or None
+        [5]. mask_roi : np.ndarray or None
             Una máscara binaria (uint8) de la región de interés (ROI) que representa el área
             entre las aponeurosis detectadas. Las dimensiones son las mismas que `img_copy`.
             Los píxeles dentro del ROI son 255, y fuera son 0. None si falla el análisis.
-        6. aponeurosis_sup : list de np.ndarray or None
+        [6]. aponeurosis_sup : list de np.ndarray or None
             Una lista que contiene tres elementos: `[upp_x_apo, upp_y_apo, num_coords]`.
             `upp_x_apo` son las coordenadas X de la aponeurosis superficial (superior).
             `upp_y_apo` son las coordenadas Y (suavizadas) de la aponeurosis superficial.
             `num_coords` es el número de coordenadas (X, Y) que conforman la aponeurosis.
             None si falla el análisis.
-        7. aponeurosis_inf : list de np.ndarray or None
+        [7]. aponeurosis_inf : list de np.ndarray or None
             Una lista que contiene tres elementos: `[low_x_apo, low_y_apo, num_coords]`.
             `low_x_apo` son las coordenadas X de la aponeurosis profunda (inferior).
             `low_y_apo` son las coordenadas Y (suavizadas) de la aponeurosis profunda.
             `num_coords` es el número de coordenadas (X, Y) que conforman la aponeurosis.
             None si falla el análisis.
-        8. fig : matplotlib.figure.Figure or None
+        [8]. fig : matplotlib.figure.Figure or None
             El objeto de la figura de Matplotlib que contiene la gráfica visual del análisis,
             mostrando la imagen original, las aponeurosis y los fascículos detectados.
             None si falla el análisis.
     """
     """
     Notes
-    -----
-    For more detailed documentation, see the respective functions
-    documentation.
 
     Examples
     --------
@@ -908,11 +905,6 @@ def doCalculations_custom (
                         scale_statement=None,
                         dictionary={'apo_treshold': '0.2', 'apo_length_tresh': '600', fasc_threshold': '0.05', 'fasc_cont_thresh': '40', 'min_width': '60', 'min_pennation': '10', 'max_pennation': '40'},
                         filter_fasc = False)
-    [1030.1118966321328, 1091.096002143386, ..., 1163.07073327008, 1080.0001937069776, 976.6099281240987]
-    [19.400700671533016, 18.30126098122986, ..., 18.505345607096586, 18.727693601171197, 22.03704574228162]
-    [441, 287, 656, 378, 125, 15, ..., -392, -45, -400, -149, -400]
-    [1410, 1320, 1551, 1351, 1149, ..., 885, 937, 705, 869, 507]
-    348.1328577
     """
     #matplotlib.use("Agg")
 
