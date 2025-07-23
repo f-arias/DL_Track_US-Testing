@@ -666,10 +666,10 @@ def doCalculations(  # TODO adapt docstring
             low_x,
             low_y_new,
             marker="p",
-            color="darkgreen",
+            color="blue",
             linewidth=2,
             alpha=0.8,
-            label="Aponeurosis Profunda",
+            label="Lower Aponeurosis",
         )
         ax.plot(
             upp_x,
@@ -678,34 +678,25 @@ def doCalculations(  # TODO adapt docstring
             color="blue",
             linewidth=2,
             alpha=0.8,
-            label="Aponeurosis Superficial",
+            label="Upper Aponeurosis",
         )
 
-        # Add the ROI mask plot
-        roi_cmap = matplotlib.colors.ListedColormap([(0, 0, 0, 0), (0.5, 0, 0.5, 0.3)])
-        ax.imshow(
-            ex_mask,
-            cmap=roi_cmap,
-            aspect="auto",
-            extent=[0, img_copy.shape[1], img_copy.shape[0], 0],
-        )
-
-        # # Plot fascicles with unique colors
-        # colormap = plt.cm.get_cmap("rainbow", len(data))
-        # handles = []  # For legend
-        # labels = []  # For legend
-        # for index, row in data.iterrows():
-        #     color = colormap(index)
-        #     (line,) = ax.plot(
-        #         row["coordsX"],
-        #         row["coordsY"],
-        #         color=color,
-        #         alpha=0.8,
-        #         linewidth=2,
-        #         label=f"Fascicle {row['x_low']}",
-        #     )
-        #     handles.append(line)
-        #     labels.append(f"Fascicle {index}")
+        # Plot fascicles with unique colors
+        colormap = plt.cm.get_cmap("rainbow", len(data))
+        handles = []  # For legend
+        labels = []  # For legend
+        for index, row in data.iterrows():
+            color = colormap(index)
+            (line,) = ax.plot(
+                row["coordsX"],
+                row["coordsY"],
+                color=color,
+                alpha=0.8,
+                linewidth=2,
+                label=f"Fascicle {row['x_low']}",
+            )
+            handles.append(line)
+            labels.append(f"Fascicle {index}")
 
         # Store the results for each frame and normalise using scale factor
         # (if calibration was done above)
@@ -725,43 +716,37 @@ def doCalculations(  # TODO adapt docstring
             midthick = midthick / (calib_dist / int(spacing))
             unit = "mm"
 
-        # # Add annotations
-        # xplot, yplot = 50, img_copy.shape[0] - 150
-        # ax.text(
-        #     xplot,
-        #     yplot,
-        #     f"Median Fascicle Length: {np.median(fasc_l):.2f} {unit}",
-        #     fontsize=12,
-        #     color="white",
-        # )
-        # ax.text(
-        #     xplot,
-        #     yplot + 30,
-        #     f"Median Pennation Angle: {np.median(pennation):.1f}°",
-        #     fontsize=12,
-        #     color="white",
-        # )
-        # ax.text(
-        #     xplot,
-        #     yplot + 60,
-        #     f"Thickness at Centre: {midthick:.1f} {unit}",
-        #     fontsize=12,
-        #     color="white",
-        # )
+        # Add annotations
+        xplot, yplot = 50, img_copy.shape[0] - 150
+        ax.text(
+            xplot,
+            yplot,
+            f"Median Fascicle Length: {np.median(fasc_l):.2f} {unit}",
+            fontsize=12,
+            color="white",
+        )
+        ax.text(
+            xplot,
+            yplot + 30,
+            f"Median Pennation Angle: {np.median(pennation):.1f}°",
+            fontsize=12,
+            color="white",
+        )
+        ax.text(
+            xplot,
+            yplot + 60,
+            f"Thickness at Centre: {midthick:.1f} {unit}",
+            fontsize=12,
+            color="white",
+        )
 
         # Remove grid and ticks for a cleaner look
         ax.grid(False)
         ax.set_xticks([])
         ax.set_yticks([])
 
-        # Add the legend
-        import matplotlib.patches as mpatches
-        handles = [
-            mpatches.Patch(color='darkgreen', label='Aponeurosis Profunda'),
-            mpatches.Patch(color='blue', label='Aponeurosis Superficial'),
-            mpatches.Patch(color='purple', label='ROI')
-        ]
-        ax.legend(handles=handles, loc='upper left')
+        # Add the legend with sorted handles and labels
+        ax.legend(handles, labels, loc="upper right", fontsize=10)
         plt.tight_layout()  # Adjust layout for text and plot
 
         if image_callback:
@@ -1297,43 +1282,51 @@ def doCalculations_custom (
             aspect="auto",
             extent=[0, img_copy.shape[1], img_copy.shape[0], 0],
         )
-
         # Plot aponeuroses
         ax.plot(
             low_x,
             low_y_new,
             marker="p",
-            color="blue",
+            color="darkgreen",    #Verde osuro
             linewidth=2,
             alpha=0.8,
-            label="Lower Aponeurosis",
+            label="Aponeurosis Profunda",
         )
         ax.plot(
             upp_x,
             upp_y_new,
             marker="p",
-            color="blue",
+            color="blue",    #Azul
             linewidth=2,
             alpha=0.8,
-            label="Upper Aponeurosis",
+            label="Aponeurosis Superficial",
         )
 
-        # Plot fascicles with unique colors
-        colormap = plt.cm.get_cmap("rainbow", len(data))
-        handles = []  # For legend
-        labels = []  # For legend
-        for index, row in data.iterrows():
-            color = colormap(index)
-            (line,) = ax.plot(
-                row["coordsX"],
-                row["coordsY"],
-                color=color,
-                alpha=0.8,
-                linewidth=2,
-                label=f"Fascicle {row['x_low']}",
-            )
-            handles.append(line)
-            labels.append(f"Fascicle {index}")
+        # ROI mask plot - Purpura semitransparente
+        roi_cmap = matplotlib.colors.ListedColormap([(0, 0, 0, 0), (0.5, 0, 0.5, 0.3)])
+        ax.imshow(
+            ex_mask,
+            cmap=roi_cmap,
+            aspect="auto",
+            extent=[0, img_copy.shape[1], img_copy.shape[0], 0],
+        )
+
+        # # Plot fascicles with unique colors
+        # colormap = plt.cm.get_cmap("rainbow", len(data))
+        # handles = []  # For legend
+        # labels = []  # For legend
+        # for index, row in data.iterrows():
+        #     color = colormap(index)
+        #     (line,) = ax.plot(
+        #         row["coordsX"],
+        #         row["coordsY"],
+        #         color=color,
+        #         alpha=0.8,
+        #         linewidth=2,
+        #         label=f"Fascicle {row['x_low']}",
+        #     )
+        #     handles.append(line)
+        #     labels.append(f"Fascicle {index}")
 
         # Store the results for each frame and normalise using scale factor
         # (if calibration was done above)
@@ -1353,37 +1346,43 @@ def doCalculations_custom (
             midthick = midthick / (calib_dist / int(spacing))
             unit = "mm"
 
-        # Add annotations
-        xplot, yplot = 50, img_copy.shape[0] - 150
-        ax.text(
-            xplot,
-            yplot,
-            f"Median Fascicle Length: {np.median(fasc_l):.2f} {unit}",
-            fontsize=12,
-            color="white",
-        )
-        ax.text(
-            xplot,
-            yplot + 30,
-            f"Median Pennation Angle: {np.median(pennation):.1f}°",
-            fontsize=12,
-            color="white",
-        )
-        ax.text(
-            xplot,
-            yplot + 60,
-            f"Thickness at Centre: {midthick:.1f} {unit}",
-            fontsize=12,
-            color="white",
-        )
+        # # Add annotations
+        # xplot, yplot = 50, img_copy.shape[0] - 150
+        # ax.text(
+        #     xplot,
+        #     yplot,
+        #     f"Median Fascicle Length: {np.median(fasc_l):.2f} {unit}",
+        #     fontsize=12,
+        #     color="white",
+        # )
+        # ax.text(
+        #     xplot,
+        #     yplot + 30,
+        #     f"Median Pennation Angle: {np.median(pennation):.1f}°",
+        #     fontsize=12,
+        #     color="white",
+        # )
+        # ax.text(
+        #     xplot,
+        #     yplot + 60,
+        #     f"Thickness at Centre: {midthick:.1f} {unit}",
+        #     fontsize=12,
+        #     color="white",
+        # )
 
         # Remove grid and ticks for a cleaner look
         ax.grid(False)
         ax.set_xticks([])
         ax.set_yticks([])
 
-        # Add the legend with sorted handles and labels
-        ax.legend(handles, labels, loc="upper right", fontsize=10)
+        # Add the legend
+        import matplotlib.patches as mpatches
+        handles = [
+            mpatches.Patch(color='darkgreen', label='Aponeurosis Profunda'),
+            mpatches.Patch(color='blue', label='Aponeurosis Superficial'),
+            mpatches.Patch(color='purple', label='ROI')
+        ]
+        ax.legend(handles=handles, loc='upper left')
         plt.tight_layout()  # Adjust layout for text and plot
 
         if image_callback:
