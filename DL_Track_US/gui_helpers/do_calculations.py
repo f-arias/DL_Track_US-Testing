@@ -839,40 +839,42 @@ def doCalculations_custom (
     -------
     tuple
         Una tupla que contiene nueve elementos:
-        (fasc_l, pennation, x_low, x_high, mask_roi, midthick, aponeurosis_sup, aponeurosis_inf, fig).
+        (fasc_l, pennation, x_low, x_high, midthick, mask_roi, aponeurosis_sup, aponeurosis_inf, fig).
         Si el análisis falla (ej., se detectan menos de dos aponeurosis), se devuelve una
         tupla de nueve valores `None`.
 
-        fasc_l : list de float or None
+        0. fasc_l : list de float or None
             Una lista con las longitudes calculadas para cada fascículo válido. Las unidades
             son píxeles, o milímetros si se proporciona `calib_dist`. None si falla el análisis.
-        pennation : list de float or None
+        1. pennation : list de float or None
             Una lista con los ángulos de pennación calculados (en grados) para cada
             fascículo correspondiente en `fasc_l`. None si falla el análisis.
-        x_low : list de int or None
+        2. x_low : list de int or None
             Una lista de las coordenadas X de los puntos de inserción de cada fascículo en la
             **aponeurosis profunda (inferior)**. None si falla el análisis.
-        x_high : list de int or None
+        3. x_high : list de int or None
             Una lista de las coordenadas X de los puntos de inserción de cada fascículo en la
             **aponeurosis superficial (superior)**. None si falla el análisis.
-        mask_roi : np.ndarray or None
+        4. midthick : float or None
+            El grosor muscular calculado en la región central de la imagen. Las unidades
+            son píxeles, o milímetros si se proporciona `calib_dist`. None si falla el análisis.
+        5. mask_roi : np.ndarray or None
             Una máscara binaria (uint8) de la región de interés (ROI) que representa el área
             entre las aponeurosis detectadas. Las dimensiones son las mismas que `img_copy`.
             Los píxeles dentro del ROI son 255, y fuera son 0. None si falla el análisis.
-        midthick : float or None
-            El grosor muscular calculado en la región central de la imagen. Las unidades
-            son píxeles, o milímetros si se proporciona `calib_dist`. None si falla el análisis.
-        aponeurosis_sup : list de np.ndarray or None
-            Una lista que contiene dos arrays de NumPy: `[upp_x_apo, upp_y_apo]`.
+        6. aponeurosis_sup : list de np.ndarray or None
+            Una lista que contiene tres elementos: `[upp_x_apo, upp_y_apo, num_coords]`.
             `upp_x_apo` son las coordenadas X de la aponeurosis superficial (superior).
             `upp_y_apo` son las coordenadas Y (suavizadas) de la aponeurosis superficial.
+            `num_coords` es el número de coordenadas (X, Y) que conforman la aponeurosis.
             None si falla el análisis.
-        aponeurosis_inf : list de np.ndarray or None
-            Una lista que contiene dos arrays de NumPy: `[low_x_apo, low_y_apo]`.
+        7. aponeurosis_inf : list de np.ndarray or None
+            Una lista que contiene tres elementos: `[low_x_apo, low_y_apo, num_coords]`.
             `low_x_apo` son las coordenadas X de la aponeurosis profunda (inferior).
             `low_y_apo` son las coordenadas Y (suavizadas) de la aponeurosis profunda.
+            `num_coords` es el número de coordenadas (X, Y) que conforman la aponeurosis.
             None si falla el análisis.
-        fig : matplotlib.figure.Figure or None
+        8. fig : matplotlib.figure.Figure or None
             El objeto de la figura de Matplotlib que contiene la gráfica visual del análisis,
             mostrando la imagen original, las aponeurosis y los fascículos detectados.
             None si falla el análisis.
@@ -1400,10 +1402,10 @@ def doCalculations_custom (
             pennation,
             data["x_low"].tolist(),
             data["x_high"].tolist(),
-            mask_roi,
             midthick,
-            [upp_x_apo, upp_y_apo],
-            [low_x_apo, low_y_apo],
+            mask_roi,
+            [upp_x_apo, upp_y_apo, len(upp_x_apo)],
+            [low_x_apo, low_y_apo, len(low_x_apo)],
             fig,
         )
 
