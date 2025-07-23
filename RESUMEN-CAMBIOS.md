@@ -59,7 +59,7 @@ Dentro del flujo iniciado por `calculateBatch()`, la función **`doCalculations(
     -   Esta figura muestra la imagen de ultrasonido original con las aponeurosis y los fascículos detectados superpuestos, proporcionando una validación visual inmediata del análisis.
 # Nota de Cambios en `doCalculations_custom`
 
-Se han realizado modificaciones en la función `doCalculations_custom` ubicada en el archivo `DL_Track_US/gui_helpers/do_calculations.py` para mejorar el acceso a los datos de las aponeurosis y la región de interés muscular.
+`doCalculations_custom` es una copia inicial exacta de `doCalculations`.Se han realizado modificaciones en la función `doCalculations_custom` ubicada en el archivo `DL_Track_US/gui_helpers/do_calculations.py` para mejorar el acceso a los datos de las aponeurosis y la región de interés muscular.
 
 ## Cambios Realizados:
 
