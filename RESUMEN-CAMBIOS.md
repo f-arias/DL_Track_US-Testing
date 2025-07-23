@@ -2,6 +2,7 @@
 
 Este documento resume los componentes clave y el flujo de ejecución para el análisis automático de imágenes estáticas dentro del paquete `DL_Track_US`.
 El diagrama de flujo se encuentra en Zotero/ Su Articulo de revista Academica/ Archivos adjuntos.
+
 ---
 
 ### 1. Interfaz Gráfica de Usuario (GUI)
@@ -31,7 +32,7 @@ El diagrama de flujo se encuentra en Zotero/ Su Articulo de revista Academica/ A
 
 Dentro del flujo iniciado por `calculateBatch()`, la función **`doCalculations()`** es el componente más importante y central. Contiene toda la lógica fundamental y la secuencia de algoritmos de procesamiento de imagen y geometría para analizar una **única imagen**.
 
-#### Responsabilidades Detalladas de `doCalculations()`:
+#### Acciones detalladas de `doCalculations()`:
 
 1.  **Uso de Modelos de Deep Learning**
     -   Es la única función que llama directamente a `model_apo.predict()` y `model_fasc.predict()`. Este es el primer y más crucial paso del análisis automático para obtener las máscaras de segmentación.
@@ -57,13 +58,21 @@ Dentro del flujo iniciado por `calculateBatch()`, la función **`doCalculations(
 5.  **Generación de la Visualización**
     -   Crea el objeto `fig` de Matplotlib, que es la imagen de salida visual principal.
     -   Esta figura muestra la imagen de ultrasonido original con las aponeurosis y los fascículos detectados superpuestos, proporcionando una validación visual inmediata del análisis.
-# Nota de Cambios en `doCalculations_custom`
+  
+## Puntos Clave del Procesamiento de Aponeurosis y ROI:
+
+El procesamiento central de las aponeurosis, que incluye la segmentación de la imagen, la detección de contornos con `contourEdge`, el suavizado de las coordenadas con `savgol_filter`, y la creación de la máscara `ex_mask` (ROI), se encuentra principalmente en estas secciones del código:
+
+*   Procesamiento de imagen, obtención y suavizado de bordes de aponeurosis: [Líneas 1038-1053](https://github.com/f-arias/DL_Track_US-Testing/blob/abbdab46f108c6431bc1b0600d36b0de9154ef1a/DL_Track_US/gui_helpers/do_calculations.py#L1038-L1053)
+*   Creación de la máscara de la región de interés `ex_mask`: [Líneas 1062-1072](https://github.com/f-arias/DL_Track_US-Testing/blob/abbdab46f108c6431bc1b0600d36b0de9154ef1a/DL_Track_US/gui_helpers/do_calculations.py#L1062-L1072)
+
+## Nota de Cambios en `doCalculations_custom`
 
 `doCalculations_custom` es una copia inicial exacta de `doCalculations`.Se han realizado modificaciones en la función `doCalculations_custom` ubicada en el archivo `DL_Track_US/gui_helpers/do_calculations.py` para mejorar el acceso a los datos de las aponeurosis y la región de interés muscular.
 
-## Cambios Realizados:
+**Cambios Realizados:**
 
-1.  **Nuevas Variables de Salida:**
+1.  ***Nuevas Variables de Salida:***
     Se han añadido cinco nuevas variables al `return` de la función. Estas variables exponen:
     *   Las coordenadas X e Y procesadas y suavizadas de las aponeurosis superficial (superior) e profunda (inferior).
     *   Una máscara binaria (`mask_roi`) que define la región de interés entre las aponeurosis.
@@ -83,15 +92,15 @@ Dentro del flujo iniciado por `calculateBatch()`, la función **`doCalculations(
         *   [Línea 963](https://github.com/f-arias/DL_Track_US-Testing/blob/abbdab46f108c6431bc1b0600d36b0de9154ef1a/DL_Track_US/gui_helpers/do_calculations.py#L963)
         *   [Línea 1376](https://github.com/f-arias/DL_Track_US-Testing/blob/b2a15fb9ab8be11295f24ef4b2b9c22cfd8f9194/DL_Track_US/gui_helpers/do_calculations.py#L1376)
 
-2.  **Actualización del Docstring:**
+2.  ***Actualización del Docstring:***
     El docstring de la función `doCalculations_custom` ha sido expandido para incluir la descripción detallada de las cinco nuevas variables retornadas y para asegurar que la tupla de retorno refleje nueve elementos.
     *   Docstring actualizado (ver sección `Returns`): [Líneas 782-878](https://github.com/f-arias/DL_Track_US-Testing/blob/abbdab46f108c6431bc1b0600d36b0de9154ef1a/DL_Track_US/gui_helpers/do_calculations.py#L782-L878)
 
-3.  **Corrección de Sintaxis y Mejoras Menores:**
+3.  ***Corrección de Sintaxis y Mejoras Menores:***
     *   Se corrigió un error de sintaxis en la sentencia `return` (una coma faltante).
     *   Se mejoró la legibilidad de una condición booleana (`if filter_fasc`).
   
-4.  **Problema mascara ROI:
+4.  ***Problema mascara ROI:***
     La función `doCalculations_custom` en `DL_Track_US/gui_helpers/do_calculations.py` es responsable de calcular los parámetros de la arquitectura muscular a partir de imágenes de ultrasonido. Parte de este proceso implica la creación de una máscara binaria de la región de interés (ROI) entre las aponeurosis superficial y profunda.
     El error se encuentra en la sección del código que genera la `ex_mask`. La lógica asume incorrectamente que las coordenadas x de las aponeurosis superior e inferior están alineadas.
 
@@ -250,11 +259,5 @@ Dentro del flujo iniciado por `calculateBatch()`, la función **`doCalculations(
     
     **En resumen, tu cambio es una mejora significativa.** Has reemplazado un método simple pero frágil por un enfoque basado en modelos que es más robusto, preciso y menos susceptible a las imperfecciones de los datos de entrada.
 
-## Puntos Clave del Procesamiento de Aponeurosis y ROI:
 
-El procesamiento central de las aponeurosis, que incluye la segmentación de la imagen, la detección de contornos con `contourEdge`, el suavizado de las coordenadas con `savgol_filter`, y la creación de la máscara `ex_mask` (ROI), se encuentra principalmente en estas secciones del código:
-
-*   Procesamiento de imagen, obtención y suavizado de bordes de aponeurosis: [Líneas 1038-1053](https://github.com/f-arias/DL_Track_US-Testing/blob/abbdab46f108c6431bc1b0600d36b0de9154ef1a/DL_Track_US/gui_helpers/do_calculations.py#L1038-L1053)
-*   Creación de la máscara de la región de interés `ex_mask`: [Líneas 1062-1072](https://github.com/f-arias/DL_Track_US-Testing/blob/abbdab46f108c6431bc1b0600d36b0de9154ef1a/DL_Track_US/gui_helpers/do_calculations.py#L1062-L1072)
-
-El propósito de estos cambios es facilitar el uso de las coordenadas de las aponeurosis y la máscara ROI para análisis y visualizaciones posteriores directamente desde la llamada a la función.
+**El propósito de estos cambios es facilitar el uso de las coordenadas de las aponeurosis y la máscara ROI para análisis y visualizaciones posteriores directamente desde la llamada a la función.**
