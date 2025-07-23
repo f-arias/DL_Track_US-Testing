@@ -690,6 +690,23 @@ def doCalculations(  # TODO adapt docstring
             extent=[0, img_copy.shape[1], img_copy.shape[0], 0],
         )
 
+        # # Plot fascicles with unique colors
+        # colormap = plt.cm.get_cmap("rainbow", len(data))
+        # handles = []  # For legend
+        # labels = []  # For legend
+        # for index, row in data.iterrows():
+        #     color = colormap(index)
+        #     (line,) = ax.plot(
+        #         row["coordsX"],
+        #         row["coordsY"],
+        #         color=color,
+        #         alpha=0.8,
+        #         linewidth=2,
+        #         label=f"Fascicle {row['x_low']}",
+        #     )
+        #     handles.append(line)
+        #     labels.append(f"Fascicle {index}")
+
         # Store the results for each frame and normalise using scale factor
         # (if calibration was done above)
         try:
@@ -708,13 +725,43 @@ def doCalculations(  # TODO adapt docstring
             midthick = midthick / (calib_dist / int(spacing))
             unit = "mm"
 
+        # # Add annotations
+        # xplot, yplot = 50, img_copy.shape[0] - 150
+        # ax.text(
+        #     xplot,
+        #     yplot,
+        #     f"Median Fascicle Length: {np.median(fasc_l):.2f} {unit}",
+        #     fontsize=12,
+        #     color="white",
+        # )
+        # ax.text(
+        #     xplot,
+        #     yplot + 30,
+        #     f"Median Pennation Angle: {np.median(pennation):.1f}°",
+        #     fontsize=12,
+        #     color="white",
+        # )
+        # ax.text(
+        #     xplot,
+        #     yplot + 60,
+        #     f"Thickness at Centre: {midthick:.1f} {unit}",
+        #     fontsize=12,
+        #     color="white",
+        # )
+
         # Remove grid and ticks for a cleaner look
         ax.grid(False)
         ax.set_xticks([])
         ax.set_yticks([])
 
         # Add the legend
-        ax.legend(loc="upper right", fontsize=10)
+        import matplotlib.patches as mpatches
+        handles = [
+            mpatches.Patch(color='darkgreen', label='Aponeurosis Profunda'),
+            mpatches.Patch(color='blue', label='Aponeurosis Superficial'),
+            mpatches.Patch(color='purple', label='ROI')
+        ]
+        ax.legend(handles=handles, loc='upper left')
         plt.tight_layout()  # Adjust layout for text and plot
 
         if image_callback:
