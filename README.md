@@ -1,114 +1,189 @@
-# DL_Track_US
+# Aspectos Importantes de la Librería DL_Track_US
 
-## *➡️ ⚙️Para ver un registro detallado de los últimos cambios realizados por Felipe Arias, consulta nuestras [Notas de Cambios y Personalizacion](RESUMEN-CAMBIOS.md).*
+Este documento resume los componentes clave y el flujo de ejecución para el análisis automático de imágenes estáticas dentro del paquete `DL_Track_US`.
+El diagrama de flujo se encuentra en 🗺️[*Diagrama de FLujo*](https://github.com/f-arias/DL_Track_US-Testing/blob/158555c5741e77336c7647cb1f360acb5229c85c/Diagrama%20de%20flujo%20DL_Track_US.html) ,al igual que en Zotero/ Su Articulo de revista Academica/ Archivos adjuntos.
 
-![DL_Track_US image](./DL_Track_US/gui_helpers/gui_files/DLTrack_logo.png)
+---
 
+### 1. Interfaz Gráfica de Usuario (GUI)
 
-The DL_Track_US package provides an easy to use graphical user interface (GUI) for deep learning based analysis of muscle architectural parameters from longitudinal ultrasonography images of human lower limb muscles. Please take a look at our [documentation](https://paulritsche.github.io/DL_Track_US/) for more information (note that aggressive ad-blockers might break the visualization of the repository description as well as the online documentation).
-This code is based on a previously published [algorithm](https://github.com/njcronin/DL_Track) and replaces it. We have extended the functionalities of the previously proposed code. The previous code will not be updated and future updates will be included in this repository. 
+-   **Módulo Principal de la GUI:** `DL_Track_US/DL_Track_US_GUI.py`
+    -   Este script es el punto de entrada para lanzar la interfaz gráfica principal de la aplicación.
+    -   Se encarga de construir la ventana, los botones, los campos de entrada y de orquestar las llamadas a las funciones de backend cuando el usuario interactúa con la aplicación.
 
-## Getting started
+### 2. Orquestación del Análisis de Imágenes Estáticas
 
-For detailled information about installaion of the DL_Track_US python package we refer you to our [documentation](https://paulritsche.github.io/DL_Track_US/). There you will finde guidelines not only for the installation procedure of DL_Track_US, but also concerding conda and GPU setup.
+-   **Módulo Organizador:** `DL_Track_US/gui_helpers/calculate_architecture.py`
+    -   Actúa como el "director de orquesta" para el análisis de un lote de imágenes estáticas.
+    -   Su función principal es preparar todas las variables, configuraciones y rutas de archivos necesarias antes de iniciar el procesamiento real.
 
-## Quickstart
+-   **Función Orquestadora Principal:** `calculateBatch()`
+    -   Ubicada dentro de `calculate_architecture.py`, esta es la función más relevante que se invoca desde la GUI para el análisis automático por lotes.
+    -   **Responsabilidades Clave:**
+        -   Implementa las configuraciones de parámetros seleccionadas por el usuario.
+        -   Itera sobre cada imagen en el directorio especificado.
+        -   Llama a la función de cálculo central (`doCalculations`) para cada imagen.
+        -   Agrega los resultados de cada imagen.
+        -   **Genera los archivos de salida finales:**
+            -   Un documento `.xlsx` (Excel) con todos los resultados numéricos.
+            -   Un documento `.pdf` que contiene las imágenes de visualización de cada análisis.
 
-Once installed, DL_Track_US can be started from the command prompt with the respective environment activated:
+### 3. El Núcleo del Procesamiento de Imagen: La Función `doCalculations()`
 
-``(DL_Track_US0.3.0) C:/User/Desktop/ python -m DL_Track_US`` 
+Dentro del flujo iniciado por `calculateBatch()`, la función **`doCalculations()`** es el componente más importante y central. Contiene toda la lógica fundamental y la secuencia de algoritmos de procesamiento de imagen y geometría para analizar una **única imagen**.
 
-In case you have downloaded the executable, simply double-click the DL_Track_US icon.
+#### Acciones detalladas de `doCalculations()`:
 
-Regardless of the used method, the GUI should open. For detailed the desciption of our GUI as well as usage examples, please take a look at the [user instruction](https://paulritsche.github.io/DL_Track_US/). An illustration of out GUI start window is presented below. It is here where users must specify input directories, choose the preferred analysis type, specify the analysis parameters or train thrain their own neural networks based on their own training data. 
+1.  **Uso de Modelos de Deep Learning**
+    -   Es la única función que llama directamente a `model_apo.predict()` y `model_fasc.predict()`. Este es el primer y más crucial paso del análisis automático para obtener las máscaras de segmentación.
 
-![GUI](./DL_Track_US/docs/md_graphics/DLTrack_mainUI.png)
+2.  **Procesamiento Completo de Aponeurosis**
+    -   Realiza una secuencia robusta para refinar la detección de las aponeurosis:
+        -   **Umbralización:** Convierte la máscara de probabilidad del modelo en una imagen binaria.
+        -   **Detección de Contornos:** Usa `cv2.findContours` para delinear las áreas detectadas.
+        -   **Filtrado:** Elimina contornos pequeños y ruidosos y los ordena espacialmente.
+        -   **Refinamiento Morfológico:** Aplica `skeletonize`, `dilate` y `erode` para obtener líneas de aponeurosis limpias y continuas.
+        -   **Extracción de Bordes:** Utiliza `contourEdge()` para aislar los bordes superior e inferior de las aponeurosis.
+        -   **Suavizado:** Aplica un filtro `savgol_filter` para obtener curvas suaves y matemáticamente manejables.
 
-## Testing
+3.  **Modelado y Extrapolación Geométrica**
+    -   Es responsable de ajustar modelos lineales (usando `np.polyfit`) a los bordes de las aponeurosis y los fascículos.
+    -   Esto permite **extrapolar** las estructuras más allá del campo de visión de la imagen, una técnica clave para medir fascículos parcialmente visibles.
 
-We have not yet integrated unit testing for DL_Track_US. Nonetheless, we have provided instructions to objectively test whether DL_Track_US, once installed, is functionable. To perform the testing procedures yourself, check out the [test instructions](https://paulritsche.github.io/DL_Track_US/).
+4.  **Cálculo de Parámetros de Arquitectura Muscular**
+    -   **Grosor Muscular (`midthick`):** Mide la distancia entre las aponeurosis en la región central.
+    -   **Longitud del Fascículo (`fasc_l`):** Calcula la distancia euclidiana entre los puntos de intersección del fascículo extrapolado con las aponeurosis extrapoladas.
+    -   **Ángulo de Pennación (`pennation`):** Calcula el ángulo entre la línea del fascículo y la línea de la aponeurosis profunda en el punto de inserción.
 
-## Code documentation 
+5.  **Generación de la Visualización**
+    -   Crea el objeto `fig` de Matplotlib, que es la imagen de salida visual principal.
+    -   Esta figura muestra la imagen de ultrasonido original con las aponeurosis y los fascículos detectados superpuestos, proporcionando una validación visual inmediata del análisis.
 
-In order to see the detailled scope and description of the modules and functions included in the DL_Track_US package, you can do so either directly in the code, or in the [Documentation](https://paulritsche.github.io/DL_Track_US/) section of our online documentation.
+## Puntos Clave del Procesamiento de Aponeurosis y ROI:
 
-## Community guidelines
+El procesamiento central de las aponeurosis, que incluye la segmentación de la imagen, la detección de contornos con `contourEdge`, el suavizado de las coordenadas con `savgol_filter`, y la creación de la máscara `ex_mask` (ROI), se encuentra principalmente en estas secciones del código:
 
-Wheter you want to contribute, report a bug or have troubles with the DL_Track_US package, take a look at the provided [instructions](https://paulritsche.github.io/DL_Track_US/) how to best do so.
+*   Procesamiento de imagen, obtención y suavizado de bordes de aponeurosis: [Líneas 1038-1053](https://github.com/f-arias/DL_Track_US-Testing/blob/abbdab46f108c6431bc1b0600d36b0de9154ef1a/DL_Track_US/gui_helpers/do_calculations.py#L1038-L1053)
+*   Creación de la máscara de la región de interés `ex_mask`: [Líneas 1062-1072](https://github.com/f-arias/DL_Track_US-Testing/blob/abbdab46f108c6431bc1b0600d36b0de9154ef1a/DL_Track_US/gui_helpers/do_calculations.py#L1062-L1072)
 
-## Research
+---
+# Registro de Cambios y Guía de Uso: Función `doCalculations_custom`
 
-### v0.3.0
+Este documento sirve como un registro completo y detallado de las modificaciones realizadas a la función `doCalculations` de la librería `DL_Track_US`. Estos cambios han culminado en la creación de una nueva función, **`doCalculations_custom`**, diseñada para mejorar la funcionalidad, precisión y capacidad de análisis externo del algoritmo de detección de arquitectura muscular.
 
-- Major upgrades and bugfixes!
-- New features: anual scaling tool, resize Video tool, crop video length tool & remove video parts tool.
-- Faster model predictions & optional stacked (sequential) predictions.
-- Improved user interface with visualization of model predictions and filtering/plotting of results.
-- Automatic `settings.json` in GUI for easy switching of model parameters.
-- Filtering of fascicle length and pennation angle data using hampel sand savgol filters.
+---
 
-#### Faster model predicitions on GPU & CPU
+## 1. Introducción de `doCalculations_custom`
 
-In the new version, we reduced processing time per frame by 40% from version 0.2.1 on GPU and CPU to 0.6s and ... , respectively.
+Para mantener la integridad de la librería original y al mismo tiempo expandir su funcionalidad, se ha creado una nueva función, `doCalculations_custom`. Esta función hereda toda la lógica central de `doCalculations` pero introduce las siguientes mejoras clave:
 
-#### Improved user interface
+1.  **Nuevas Variables de Salida:** Expone datos cruciales que antes eran internos, como las coordenadas de las aponeurosis y la máscara de la región de interés (ROI).
+2.  **Algoritmo de ROI Mejorado:** Implementa un método más robusto para definir el área del músculo.
+3.  **Visualización Enfocada:** La figura de salida ahora muestra la máscara de ROI y el trazado de las aponeurosis, eliminando el ploteo de los fascículos para una validación más clara de la detección.
+4.  **Documentación Actualizada:** Incluye un `docstring` revisado y preciso que refleja todos los cambios.
 
-In version 0.3.0 we improved the user interface and included real time visualization of model predictions as well as a results terminal at the end of analyis. The analysis process is now more transparent and felxibel, since we included more analysis options in the settings. 
+---
 
-![DL_Track_Main](./DL_Track_US/docs/md_graphics/DLTrack_mainUI.png)
+## 2. Expansión de las Variables de Salida
 
-#### New model with bi-directional short long term memory for video analysis
+El principal motivador de esta actualización fue exponer los datos geométricos clave para análisis externos. La nueva función `doCalculations_custom` ahora devuelve una tupla con **9 elementos**.
 
-We further provide a new model with a new overall aproach for fascicle anylsis in videos. **For the first time, we provide a model with memory and awareness of surrounding frames**. The model is taken from [Chanti et al. (2021)](https://ieeexplore.ieee.org/document/9350651) and is called **IFSS_NET**. 
+### 2.1. Desglose de las Variables de Salida
 
-In our approach, we use a bi-directional short long term memory (BiLSTM) to capture the temporal context of the video. We excluded the siamese encoder from the orginal model. Furhtermore, we used a hybrid loss combination of the Dice loss and binary cross entropy loss, both weighted equally. 
+| Índice | Variable Devuelta     | Tipo de Dato                | Descripción Detallada                                                                                                                                                             |
+| :----- | :-------------------- | :-------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0      | `fasc_l`              | `list` de `float`           | Lista con las longitudes calculadas para cada fascículo válido detectado. Las unidades son píxeles o, si se proporciona calibración, milímetros.                          |
+| 1      | `pennation`           | `list` de `float`           | Lista con los ángulos de pennación en **grados** para cada fascículo correspondiente.                                                                                    |
+| 2      | `x_low`               | `list` de `int`             | Lista de las coordenadas X del punto de inserción de cada fascículo en la **aponeurosis profunda (inferior)**.                                                           |
+| 3      | `x_high`              | `list` de `int`             | Lista de las coordenadas X del punto de inserción de cada fascículo en la **aponeurosis superficial (superior)**.                                                          |
+| 4      | `midthick`            | `float`                     | Valor único que representa el **grosor del músculo** medido en la región central de la imagen.                                                                            |
+| 5      | `ex_mask`             | `np.ndarray`  |               **(Nuevo)** La máscara binaria (`uint8`) que representa la **Región de Interés (ROI)** del músculo, delimitada por las aponeurosis. Los píxeles del músculo tienen valor 255. |
+| 6      | `[upp_x, upp_y_new, len(upp_x)]`  | `list`          | **(Nuevo)** Lista con 3 elementos: [array de X, array de Y suavizado, número de puntos] para la **aponeurosis superficial**.                                      |
+| 7      | `[low_x, low_y_new, len(low_x)]`  | `list`          | **(Nuevo)** Lista con 3 elementos: [array de X, array de Y suavizado, número de puntos] para la **aponeurosis profunda**.                                        |
+| 8      | `fig`                 | `matplotlib.figure.Figure`  | Objeto de la figura de Matplotlib que contiene la visualización completa del análisis. |
 
-To reach this decision, we compared different models and their performance compared to a manual ground thruth and a kalman-filter based tracking apporach (UltraTimTrack) proposed by [van der Zee et al. (2025)](https://peerj.com/articles/cs-2636/). 
+---
 
-#### Model Training results 
+## 3. Mejora del Algoritmo de la Máscara de Región de Interés (ROI)
 
-We compard our previous vgg16unet model ([Ritsche et al. (2024)](https://doi.org/10.1016/j.ultrasmedbio.2024.01.004)) to [SegFormer](https://arxiv.org/pdf/2105.15203), [uNet3+](https://arxiv.org/pdf/2004.08790) and [IFSS-Net](https://ieeexplore.ieee.org/document/9350651) architectures. The Results on a unseen test set of 120 images with examplary predictions can be seen below. 
+La generación de la máscara `ex_mask`, que define el área del músculo, ha sido rediseñada para ser más precisa y robusta. A continuación se detalla y compara el método antiguo con el nuevo.
 
-![model_comparison](./DL_Track_US/docs/md_graphics/model_training_test/model_comparison.png)
+### 3.1. Método Original (Comentado en el código)
 
-Moreover, we compared the models due to similar performance to the one of the validation videos from the original paper (Ritsche et al. (2024)). This video was recently used to compare the performance of different methods for fascicle tracking ([van der Zee et al. (2025)](https://peerj.com/articles/cs-2636/)). We demonstrate improvement in the results from DL_Track_US in terms of RMSD compared to manual annotation as displayed below. Of all networks, the IFSS-Net model performed best in a trade-off between pennation angle and fascicle length RMSD. 
+El enfoque original se basaba en iterar directamente sobre los índices de los arrays de coordenadas de las aponeurosis.
 
-![model_comparison_calf_raise](./DL_Track_US/docs/md_graphics/model_training_test/model_comparison_calf_raise.png)	
+#### Código Original:
+```python
+# ex_mask = np.zeros(thresh.shape, np.uint8)
+# ex_1 = 0
+# ex_2 = np.minimum(len(low_x), len(upp_x))
 
-Note that, compared to v0.2.1, we introduced hampel-filtering of the fascicle values in each frame and additionally applied a savitzky-golay filter to the median fascicle data to furhter reduce root mean squared distance. The results for three different tasks are displayed below. 
+# for ii in range(ex_1, ex_2):
+#     ymin = int(np.floor(upp_y_new[ii]))
+#     ymax = int(np.ceil(low_y_new[ii]))
+#     ex_mask[ymin:ymax, ii] = 255
+```
+#### Análisis del Método Original:
+-   **Lógica:** Rellena el área verticalmente, columna por columna, basándose en la correspondencia de los índices de los arrays `upp_y_new` y `low_y_new`.
+-   **Debilidad Principal:** La línea `ex_2 = np.minimum(len(low_x), len(upp_x))` limita el rellenado al largo del array de aponeurosis más corto. Si una aponeurosis es detectada en una sección más corta del eje X que la otra, el área donde no se superponen se ignora, resultando en una máscara incompleta.
 
-##### Calf Raise
+### 3.2. Nuevo Método Implementado
 
-![model_comparison_calf_raise_savgol](./DL_Track_US/docs/md_graphics/model_training_test/model_comparison_calf_raise_savgol.png)
+El nuevo método utiliza un enfoque basado en modelos matemáticos para definir los límites de la máscara, solucionando las limitaciones del método anterior.
 
-##### VL fixed end maximal knee extentsion
+#### Código Nuevo y Explicación:
+```python
+# Inicializa una máscara negra del mismo tamaño que la imagen de entrada.
+ex_mask = np.zeros(thresh.shape, np.uint8)
 
-![model_comparison_mvc](./DL_Track_US/docs/md_graphics/model_training_test/model_comparison_mvc.png)
+# 1. Se ajusta un polinomio de grado 2 (una parábola) a los puntos de cada aponeurosis.
+#    'np.polyfit' encuentra los coeficientes de la curva que mejor se ajusta.
+#    'np.poly1d' convierte estos coeficientes en una función matemática.
+#    Ahora 'f_upp(x)' devolverá la coordenada Y de la aponeurosis superior para cualquier X.
+f_upp = np.poly1d(np.polyfit(upp_x, upp_y_new, 2))
+f_low = np.poly1d(np.polyfit(low_x, low_y_new, 2))
 
+# 2. Se determina el rango de superposición espacial real en el eje X.
+#    'start_x' es la coordenada X más a la izquierda donde AMBAS aponeurosis existen.
+#    'end_x' es la coordenada X más a la derecha donde AMBAS aponeurosis existen.
+start_x = int(max(np.min(upp_x), np.min(low_x)))
+end_x = int(min(np.max(upp_x), np.max(low_x)))
 
-🚨 **More comparsions will follow in the upcoming publication.**
+# 3. Se itera píxel por píxel a lo largo del eje X dentro del rango de superposición.
+for x in range(start_x, end_x):
+    # Para cada columna 'x', se usan las funciones polinómicas para obtener
+    # las coordenadas Y interpoladas y suaves de los límites superior (ymin) e inferior (ymax).
+    ymin = int(np.floor(f_upp(x)))    # floor redondea hacia abajo
+    ymax = int(np.ceil(f_low(x)))     # ceil redondea hacia arriba
 
-🚨 We are currently working on implementing tracking of fascicles accounting for their curvature.
+    # 4. Salvaguarda para asegurar que las coordenadas no se salgan de los límites de la imagen.
+    ymin = max(0, ymin)
+    ymax = min(ex_mask.shape, ymax)
 
+    # 5. Se rellena la columna 'x' entre los límites ymin e ymax con el valor 255 (blanco).
+    ex_mask[ymin:ymax, x] = 255
+```
 
-### v0.2.1 and prior
+---
 
-The previously published [algorithm](https://github.com/njcronin/DL_Track_US) was developed with the aim to compare the performance of the trained deep learning models with manual analysis of muscle fascicle length, muscle fascicle pennation angle and muscle thickness. The results were presented in a published [preprint](https://arxiv.org/pdf/2009.04790.pdf). The results demonstrated in the article described the DL_Track_US algorithm to be comparable with manual analysis of muscle fascicle length, muscle fascicle pennation angle and muscle thickness in ultrasonography images as well as videos. The results are briefly illustrated in the figures below.
+## 4. Nueva Visualización de Salida: Enfoque en Aponeurosis y ROI
 
-![Analysis process](./DL_Track_US/docs/md_graphics/prev_results_v0.2.1/Figure_analysis.png)
+La figura generada por `doCalculations_custom` ha sido modificada para centrarse en la validación de las detecciones de las aponeurosis y la Región de Interés (ROI).
+Se conservaron pero se comentaron las líneas de código que dibujaban los fascículos y las anotaciones de texto (longitud de fascículo, ángulo de pennación y grosor muscular) para mantener el código original como referencia.
 
-Analysis process from original input image to output result for images of two muscles, gastrocnemius medialis (GM) and vastus lateralis (VL). Subsequent to inputting the original images into the models, predictions are generated by the models for the aponeuroses (apo) and fascicles as displayed in the binary images. Based on the binary image, the output result is calculated by post-processing operations, fascicles and aponeuroses are drawn and the values for fascicle length, pennation angle and muscle thickness are displayed.
+### 4.1. Composición de la Figura
 
-![Bland-altman Plot](./DL_Track_US/docs/md_graphics/prev_results_v0.2.1/Figure_B-A.png)
-
-Bland-Altman plots of the results obtained with our approach versus the results of manual analyses by the authors (mean of all 3). Results are shown for muscle fascicle length (A), pennation angle (B), and muscle thickness (C). For these plots, only the median fascicle values from the deep learning approach were used, and thickness was computed from the centre of the image. Solid and dotted lines depict bias and 95% limits of agreement, respectively.
-
-![Video comparison](./DL_Track_US/docs/md_graphics/prev_results_v0.2.1/Figure_video.png)
-
-A comparison of fascicle lengths computed using DL_Track_US with those from [UltraTrack](https://sites.google.com/site/ultratracksoftware/home)(Farris & Lichtwark, 2016, DOI:10.1016/j.cmpb.2016.02.016), a semi-automated method of identifying muscle fascicles. Each row shows trials from a particular task (3 examples per task from different individuals, shown in separate columns). For DL_Track_US, the length of each individual fascicle detected in every frame is denoted by a gray dot. Solid black lines denote the mean length of all detected fascicles by DL_Track_US. Red dashed lines show the results of tracking a single fascicle with Ultratrack.
-
-## Related Work
-
-The DL_Track_US package can only be used for the automatic analysis of longitudinal muscle ultrasonography images containing muscle architectural parameters. However, in order to assess muscle anatomical cross-sectional area (ACSA), panoramic ultrasonography images in the transversal plane are required. We recently published [DeepACSA](https://journals.lww.com/acsm-msse/Abstract/2022/12000/DeepACSA__Automatic_Segmentation_of.21.aspx), an open source algorithm for automatic analysis of muscle ACSA in panoramic ultrasonography images of the human vastus lateralis, rectus femoris and gastrocnemius medialis. The repository containing the code and installation as well as usage instructions is locate [here](https://github.com/PaulRitsche/DeepACSA).
-
-
+1.  **Fondo:** La imagen de ultrasonido (`img_copy`) se muestra en escala de grises (`cmap='gray'`) como base.
+2.  **Trazado de Aponeurosis:** Las líneas de las aponeurosis se superponen a la imagen.
+    -   **Función:** `ax.plot()`
+    -   **Datos:** Se utilizan los arrays `(upp_x, upp_y_new)` y `(low_x, low_y_new)`.
+    -   **Estilo:** La aponeurosis sup. se dibujan con `color="blue"` y la aponeurosis prof. se dibuja con `color="darkgreen" y un grosor de línea de `linewidth=1` para un trazado fino y claro.
+3.  **Superposición de la Máscara ROI:** La máscara del músculo se visualiza como una capa semi-transparente para resaltar el area del musculo.
+    -   **Lógica:** Se crea una imagen a color vacía (`roi_colored`). Los píxeles correspondientes a la máscara `ex_mask` se colorean de **púrpura** (`[128, 0, 128]`).
+    -   **Función:** `ax.imshow(roi_colored, alpha=0.3, ...)`
+    -   **Estilo:** La máscara púrpura se superpone con una opacidad del 30% (`alpha=0.3`), permitiendo ver tanto el área de la ROI como la imagen de ultrasonido subyacente.
+4.  **Leyenda Mejorada:** La leyenda ha sido movida a la esquina superior izquierda y mejorada para mostrar la correspondencia entre color y término:
+    - **Verde Oscuro:** Aponeurosis Profunda
+    - **Azul:** Aponeurosis Superficial
+    - **Púrpura:** ROI
+---

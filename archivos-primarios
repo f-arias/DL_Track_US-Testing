@@ -1,0 +1,16 @@
+.DS_Store
+.gitattributes
+.gitignore
+.pre-commit-config.yaml
+.readthedocs.yml
+CHANGELOG.rst
+CITATION.cff
+LICENSE
+MANIFEST.in
+README.md
+README_Pypi.md
+environment.yml
+pyproject.toml
+requirements.txt
+setup.cfg
+setup.py
