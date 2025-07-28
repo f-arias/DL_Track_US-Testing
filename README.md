@@ -3,6 +3,8 @@
 Este documento resume los componentes clave y el flujo de ejecución para el análisis automático de imágenes estáticas dentro del paquete `DL_Track_US`.
 El diagrama de flujo se encuentra en 🗺️[*Diagrama de FLujo*](https://github.com/f-arias/DL_Track_US-Testing/blob/158555c5741e77336c7647cb1f360acb5229c85c/Diagrama%20de%20flujo%20DL_Track_US.html) ,al igual que en Zotero/ Su Articulo de revista Academica/ Archivos adjuntos.
 
+NOTA: El módulo .py para procesar las imágenes de referencia del método manual está en este [permalink](./Explicacion_processing_manual_method.md).
+
 ---
 
 ### 1. Interfaz Gráfica de Usuario (GUI)
