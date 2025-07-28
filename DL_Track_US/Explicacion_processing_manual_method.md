@@ -1,4 +1,4 @@
-# Explicación del Módulo `processing_manual_method_reference`
+# Explicación del Módulo `processing_manual_method.py`
 
 Este documento detalla el funcionamiento del módulo `processing_manual_method_reference.py`, diseñado para procesar una máscara de aponeurosis de una imagen de ultrasonido y generar una máscara de Región de Interés (ROI) que delimita el músculo.
 
