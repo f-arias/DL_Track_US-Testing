@@ -7,38 +7,40 @@ from .gui_helpers.do_calculations import sortContours, contourEdge
 
 def process_aponeurosis_mask(mask_path: str):
     """
-    Processes a single aponeurosis mask to create an ROI mask.
+    Procesa una única máscara de aponeurosis para crear una máscara ROI.
 
-    Args:
-        mask_path (str): Path to the aponeurosis mask.
+    Argumentos:
+        mask_path (str): Ruta a la máscara de aponeurosis.
 
-    Returns:
-        np.ndarray: The ROI mask.
+    Devuelve:
+        np.ndarray: La máscara ROI.
     """
-    APO_LENGTH_TRESH = 600 # Define el umbral de longitud para los contornos de la aponeurosis.
-    MIN_WIDTH = 60 # Define el ancho mínimo entre aponeurosis.
+    #Definidos por defecto
+    APO_LENGTH_TRESH = 600     # Define el umbral de longitud para los contornos de la aponeurosis.
+    MIN_WIDTH = 60     # Define el ancho mínimo entre aponeurosis.
 
     try:
-        mask = imageio.imread(mask_path) # Lee la imagen de la máscara desde la ruta especificada.
+        mask = imageio.imread(mask_path) # Lee la imagen de la máscara desde la ruta especificada, sin importar el formato de imagen.
     except FileNotFoundError as e: # Maneja el error si no se encuentra el archivo.
         print(f"Error reading file: {e}") # Imprime un mensaje de error.
         return None # Devuelve None si no se puede leer el archivo.
 
-    if mask.ndim == 3: # Comprueba si la imagen es a color (tiene 3 dimensiones).
+    if mask.ndim == 3:     # Comprueba si la imagen es a color (3-dimensiones).
         mask = cv2.cvtColor(mask, cv2.COLOR_BGR2GRAY) # Convierte la máscara a escala de grises.
 
-    _, thresh = cv2.threshold(mask, 0, 255, cv2.THRESH_BINARY) # Aplica un umbral para binarizar la imagen.
-    thresh = thresh.astype("uint8") # Convierte la imagen a tipo de dato de 8 bits sin signo.
+    _, thresh = cv2.threshold(mask, 0, 255, cv2.THRESH_BINARY) # Aplica un umbral(>0 = valor 255) para binarizar la imagen.
+    thresh = thresh.astype("uint8")     # Convierte la imagen a tipo de dato de 8 bits sin signo.
 
     contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE) # Encuentra los contornos en la imagen binarizada.
 
     contours_re = [c for c in contours if len(c) > APO_LENGTH_TRESH] # Filtra los contornos para mantener solo los que superan el umbral de longitud.
     if len(contours_re) < 1: # Comprueba si hay al menos un contorno.
-        return None # Devuelve None si no hay contornos válidos.
+        return None 
 
     contours, _ = sortContours(contours_re) # Ordena los contornos.
+    
     if contours is None: # Comprueba si los contornos se pudieron ordenar.
-        return None # Devuelve None si no se pudieron ordenar los contornos.
+        return None     # Devuelve None si no se pudieron ordenar los contornos.
 
     contours_re2 = [] # Inicializa una lista para almacenar los nuevos contornos.
     for contour in contours: # Itera sobre los contornos ordenados.
@@ -81,15 +83,15 @@ def process_aponeurosis_mask(mask_path: str):
     if contoursE is None: # Comprueba si los contornos se pudieron ordenar.
         return None # Devuelve None si no se pudieron ordenar los contornos.
 
-    upp_x, upp_y = contourEdge("B", contoursE[0]) # Obtiene los bordes superior (B) del primer contorno.
+    upp_x, upp_y = contourEdge("B", contoursE[0]) # Obtiene los bordes superior (Bottom) del primer contorno.
 
     if contoursE[1][0, 0, 1] > contoursE[0][0, 0, 1] + MIN_WIDTH: # Comprueba si la segunda aponeurosis está lo suficientemente separada de la primera.
         low_x, low_y = contourEdge("T", contoursE[1]) # Obtiene los bordes inferior (T) del segundo contorno.
     else: # Si no están suficientemente separadas.
         if len(contoursE) > 2: # Comprueba si hay un tercer contorno.
-            low_x, low_y = contourEdge("T", contoursE[2]) # Obtiene los bordes inferior (T) del tercer contorno.
+            low_x, low_y = contourEdge("T", contoursE[2]) # Obtiene los bordes inferior (Top) del tercer contorno.
         else: # Si no hay un tercer contorno.
-            return None # Devuelve None.
+            return None # Devuelve None (osea Exit).
 
     if len(upp_x) == 0 or len(low_x) == 0: # Comprueba si se encontraron los bordes superior e inferior.
         return None # Devuelve None si no se encontraron los bordes.
