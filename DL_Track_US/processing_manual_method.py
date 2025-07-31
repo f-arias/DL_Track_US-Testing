@@ -8,17 +8,21 @@ from .gui_helpers.do_calculations import sortContours, contourEdge
 def process_aponeurosis_mask(mask_path: str):
     """
     Procesa una única máscara de aponeurosis para crear una máscara ROI.
-
+    
     Argumentos:
         mask_path (str): Ruta a la máscara de aponeurosis.
 
     Devuelve:
-        np.ndarray: La máscara ROI.
+        np.ndarray (uint8): La máscara ROI.
+
+    Nota : Para más compresion leer Descripcion_processing_manual_method.md
+    en el repositorio GitHub personal-custom.
     """
     #Definidos por defecto
     APO_LENGTH_TRESH = 600     # Define el umbral de longitud para los contornos de la aponeurosis.
     MIN_WIDTH = 60     # Define el ancho mínimo entre aponeurosis.
 
+#--- Carga y Preprocesamiento de la Máscara ---
     try:
         mask = imageio.imread(mask_path) # Lee la imagen de la máscara desde la ruta especificada, sin importar el formato de imagen.
     except FileNotFoundError as e: # Maneja el error si no se encuentra el archivo.
@@ -30,7 +34,8 @@ def process_aponeurosis_mask(mask_path: str):
 
     _, thresh = cv2.threshold(mask, 0, 255, cv2.THRESH_BINARY) # Aplica un umbral(>0 = valor 255) para binarizar la imagen.
     thresh = thresh.astype("uint8")     # Convierte la imagen a tipo de dato de 8 bits sin signo.
-
+    
+#--- Detección y Fusión de Contornos ---
     contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE) # Encuentra los contornos en la imagen binarizada.
 
     contours_re = [c for c in contours if len(c) > APO_LENGTH_TRESH] # Filtra los contornos para mantener solo los que superan el umbral de longitud.
@@ -68,11 +73,14 @@ def process_aponeurosis_mask(mask_path: str):
                 cv2.drawContours(maskT, [m], 0, 255, -1) # Dibuja una línea entre los dos contornos en la máscara.
 
     maskT[maskT > 0] = 1 # Convierte la máscara a binaria (0 y 1).
+
+#--- Refinamiento de Aponeurosis ---
     skeleton = skeletonize(maskT).astype(np.uint8) # Aplica esqueletización a la máscara para obtener una representación de una sola línea.
     kernel = np.ones((3, 7), np.uint8) # Define un kernel para las operaciones morfológicas.
     dilate = cv2.dilate(skeleton, kernel, iterations=15) # Dilata el esqueleto para engrosar las líneas.
     erode = cv2.erode(dilate, kernel, iterations=10) # Erosiona la imagen dilatada para refinar las líneas.
 
+#--- Extracción de Bordes y Suavizado ---
     contoursE, _ = cv2.findContours(erode, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE) # Encuentra los contornos en la imagen erosionada.
     contoursE = [c for c in contoursE if len(c) > APO_LENGTH_TRESH] # Filtra los contornos para mantener solo los que superan el umbral de longitud.
 
@@ -99,6 +107,7 @@ def process_aponeurosis_mask(mask_path: str):
     upp_y_new = savgol_filter(upp_y, min(len(upp_y)-1 if len(upp_y) % 2 == 0 else len(upp_y), 81), 2) # Suaviza los datos del borde superior con un filtro Savitzky-Golay.
     low_y_new = savgol_filter(low_y, min(len(low_y)-1 if len(low_y) % 2 == 0 else len(low_y), 81), 2) # Suaviza los datos del borde inferior con un filtro Savitzky-Golay.
 
+#--- Generación de la Máscara ROI ---
     ex_mask = np.zeros(thresh.shape, np.uint8) # Crea una máscara en negro para la región de interés (ROI).
     f_upp = np.poly1d(np.polyfit(upp_x, upp_y_new, 2)) # Ajusta un polinomio de segundo grado a los datos del borde superior.
     f_low = np.poly1d(np.polyfit(low_x, low_y_new, 2)) # Ajusta un polinomio de segundo grado a los datos del borde inferior.
