@@ -1,72 +1,64 @@
-# Explicación del Módulo `processing_manual_method.py`
+# Explicación Detallada del Módulo `processing_manual_method.py`
 
-Este documento detalla el funcionamiento del módulo `processing_manual_method_reference.py`, diseñado para procesar una máscara de aponeurosis de una imagen de ultrasonido y generar una máscara de Región de Interés (ROI) que delimita el músculo.
+Este documento ofrece una explicación exhaustiva del módulo `processing_manual_method.py`, cuyo propósito es procesar una máscara de aponeurosis de una imagen de ultrasonido para generar una máscara de Región de Interés (ROI) que delimita el músculo.
 
 ## Outline
 
 1.  [Introducción](#introducción)
 2.  [Dependencias](#dependencias)
-3.  [Funciones Importadas](#funciones-importadas)
-4.  [Función Principal](#función-principal)
+3.  [Funciones del Módulo](#funciones-del-módulo)
     *   [`process_aponeurosis_mask`](#process_aponeurosis_mask)
-5.  [Flujo de Trabajo del Procesamiento](#flujo-de-trabajo-del-procesamiento)
-    *   [Carga y Preprocesamiento de la Máscara](#carga-y-preprocesamiento-de-la-máscara)
-    *   [Detección y Fusión de Contornos](#detección-y-fusión-de-contornos)
-    *   [Refinamiento de Aponeurosis](#refinamiento-de-aponeurosis)
-    *   [Extracción de Bordes y Suavizado](#extracción-de-bordes-y-suavizado)
-    *   [Generación de la Máscara ROI](#generación-de-la-máscara-roi)
+    *   [`process_aponeurosis_mask_comprehensive`](#process_aponeurosis_mask_comprehensive)
+4.  [Diferencias Clave entre las Funciones](#diferencias-clave-entre-las-funciones)
+5.  [Flujo de Trabajo Detallado](#flujo-de-trabajo-detallado)
 
 ---
 
 ### Introducción
 
-El objetivo de este módulo es replicar la lógica de la función `doCalculations_custom` del archivo `do_calculations.py`, pero aplicado a una única máscara de aponeurosis generada manualmente que contiene tanto la aponeurosis superficial como la profunda. A partir de una única imagen (máscara), el script genera una máscara binaria que define la región del músculo entre ellas.
+El objetivo principal de este módulo es proporcionar herramientas para procesar máscaras de aponeurosis y generar una máscara de ROI. El módulo ofrece dos funciones para este propósito, cada una adaptada a diferentes tipos de máscaras de entrada.
 
 ### Dependencias
 
-El script utiliza las siguientes librerías de Python:
+El script depende de varias librerías de Python para su funcionamiento:
 
-*   **OpenCV (`cv2`)**: Para operaciones de visión por computadora.
-*   **NumPy (`np`)**: Para manipulación de arrays.
-*   **ImageIO**: Para leer formatos de imagen.
+*   **OpenCV (`cv2`)**: Utilizada para todas las operaciones de visión por computadora.
+*   **NumPy (`np`)**: Fundamental para la manipulación de arrays y operaciones numéricas.
+*   **ImageIO**: Empleada para leer formatos de imagen.
 *   **SciPy (`scipy.signal.savgol_filter`)**: Para suavizar las líneas de las aponeurosis.
-*   **Scikit-image (`skimage.morphology.skeletonize`)**: Para operaciones morfológicas.
+*   **Scikit-image (`skimage.morphology.skeletonize`)**: Utilizada para operaciones morfológicas.
 
-### Funciones Importadas
-
-Para evitar la duplicación de código, el script importa las siguientes funciones del módulo `do_calculations.py`:
-
-*   **`sortContours`**: Ordena los contornos.
-*   **`contourEdge`**: Extrae el borde de un contorno.
-
-### Función Principal
+### Funciones del Módulo
 
 #### `process_aponeurosis_mask`
 
-Esta es la función central del módulo. Acepta una única ruta de archivo a la máscara de aponeurosis y orquesta todo el proceso para generar el ROI.
+Esta función está optimizada para procesar máscaras de aponeurosis generadas manualmente. Asume que la máscara de entrada es una representación limpia y no requiere un preprocesamiento extenso.
 
-### Flujo de Trabajo del Procesamiento
+#### `process_aponeurosis_mask_comprehensive`
 
-#### Carga y Preprocesamiento de la Máscara
+Esta función es una versión más robusta, adecuada para máscaras que pueden contener ruido o discontinuidades, como las generadas automáticamente. Incluye pasos adicionales de fusión de contornos y refinamiento morfológico.
 
-1.  **Lectura de Imagen**: La máscara se lee desde la ruta proporcionada.
-2.  **Conversión a Escala de Grises**: Si la imagen es RGB, se convierte a escala de grises.
-3.  **Binarización**: La máscara se binariza.
+### Diferencias Clave entre las Funciones
 
-#### Detección y Fusión de Contornos
+La principal diferencia radica en el nivel de preprocesamiento:
 
-1.  **Detección y Filtrado**: Se detectan los contornos y se filtran por longitud.
-2.  **Ordenamiento y Fusión**: Los contornos se ordenan y se fusionan si están cerca.
+*   **`process_aponeurosis_mask`**:
+    *   Es más directa y eficiente.
+    *   No realiza fusión de contornos ni refinamiento morfológico.
+    *   Ideal para máscaras manuales de alta calidad.
 
-#### Refinamiento de Aponeurosis
+*   **`process_aponeurosis_mask_comprehensive`**:
+    *   Incluye lógica para reordenar puntos de contorno y fusionar contornos cercanos.
+    *   Aplica esqueletización y operaciones morfológicas para refinar las aponeurosis.
+    *   Recomendada para máscaras automáticas o ruidosas.
 
-1.  **Esqueletización y Morfología**: Se aplican operaciones morfológicas para refinar las aponeurosis.
+### Flujo de Trabajo Detallado
 
-#### Extracción de Bordes y Suavizado
+Ambas funciones siguen un flujo de trabajo similar, pero `process_aponeurosis_mask_comprehensive` incluye pasos adicionales:
 
-1.  **Extracción y Suavizado**: Se extraen los bordes relevantes y se suavizan.
-
-#### Generación de la Máscara ROI
-
-1.  **Ajuste y Relleno**: Se ajusta un polinomio a las aponeurosis y se rellena el área intermedia para crear el ROI.
-2.  **Retorno**: La función devuelve la máscara ROI.
+1.  **Carga y Preprocesamiento Básico**: Ambas funciones leen la imagen, la convierten a escala de grises y la binarizan.
+2.  **Detección de Contornos**: Ambas detectan y filtran contornos por longitud.
+3.  **Fusión y Refinamiento (Solo `_comprehensive`)**: La versión completa fusiona contornos y aplica refinamiento morfológico.
+4.  **Extracción de Bordes y Suavizado**: Ambas extraen los bordes y los suavizan.
+5.  **Generación de la Máscara ROI**: Ambas ajustan un polinomio a los bordes y rellenan el área intermedia.
+6.  **Retorno**: Ambas devuelven la máscara ROI.
