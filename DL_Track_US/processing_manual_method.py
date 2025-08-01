@@ -3,7 +3,7 @@ import numpy as np
 import imageio
 from scipy.signal import savgol_filter
 from skimage.morphology import skeletonize
-from .gui_helpers.do_calculations import sortContours, contourEdge
+from DL_Track_US.gui_helpers.do_calculations import sortContours, contourEdge
 
 def process_aponeurosis_mask(mask_path: str):
     """
@@ -18,34 +18,44 @@ def process_aponeurosis_mask(mask_path: str):
 
     Returns:
         np.ndarray: La máscara de ROI.
-    """
-    APO_LENGTH_TRESH = 600
-    MIN_WIDTH = 60
 
+    Nota :  - Para más compresion leer Descripcion_processing_manual_method.md
+            en el repositorio personal GitHub DL_Track_US-Testing/Custom-MT.
+            - Esta funcion esta basado en gran medida en el contenido 
+            de DL_Track_US/doCalculations.
+    """
+    # Definidos por DL_Track_US, valor por defecto
+    #APO_LENGTH_TRESH = 600
+    #MIN_WIDTH = 60
+    
+#--- Carga de imagen ---
     try:
         mask = imageio.imread(mask_path)
     except FileNotFoundError as e:
         print(f"Error reading file: {e}")
         return None
 
+#--- Proprocesamiento de imagen ---
     if mask.ndim == 3:
         mask = cv2.cvtColor(mask, cv2.COLOR_BGR2GRAY)
 
     _, thresh = cv2.threshold(mask, 0, 255, cv2.THRESH_BINARY)
     thresh = thresh.astype("uint8")
 
+#--- Obtencion y ordenamiento de contornos
     contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
 
-    contours = [c for c in contours if len(c) > APO_LENGTH_TRESH]
+    #contours = [c for c in contours if len(c) > APO_LENGTH_TRESH]
     if len(contours) < 2:
         return None
 
-    contours, _ = sortContours(contours)
+    contours, _ = sortContours(contours)    # Ordena los contornos de arriba hacia abajo
     if contours is None:
         return None
 
-    upp_x, upp_y = contourEdge("B", contours[0])
-    low_x, low_y = contourEdge("T", contours[1])
+#--- Obtencion de coordenadas de aponeurosis ---
+    upp_x, upp_y = contourEdge("B", contours[0])     # B = Bottom
+    low_x, low_y = contourEdge("T", contours[1])     # T = Top
 
     if len(upp_x) == 0 or len(low_x) == 0:
         return None
@@ -54,6 +64,7 @@ def process_aponeurosis_mask(mask_path: str):
     upp_y_new = savgol_filter(upp_y, min(len(upp_y)-1 if len(upp_y) % 2 == 0 else len(upp_y), 81), 2)
     low_y_new = savgol_filter(low_y, min(len(low_y)-1 if len(low_y) % 2 == 0 else len(low_y), 81), 2)
 
+#--- Generación de la Máscara ROI ---
     ex_mask = np.zeros(thresh.shape, np.uint8)
     f_upp = np.poly1d(np.polyfit(upp_x, upp_y_new, 2))
     f_low = np.poly1d(np.polyfit(low_x, low_y_new, 2))
@@ -85,10 +96,12 @@ def process_aponeurosis_mask_comprehensive(mask_path: str):
     Returns:
         np.ndarray (uint8): La máscara de ROI.
     
-    Nota : Para más compresion leer Descripcion_processing_manual_method.md
-    en el repositorio GitHub personal-custom.
+    Nota :  - Para más compresion leer Descripcion_processing_manual_method.md
+            en el repositorio personal GitHub DL_Track_US-Testing/Custom-MT.
+            - Esta funcion esta basado en gran medida en el contenido 
+            de DL_Track_US/doCalculations.
     """
-    #Definidos por defecto
+    #Definidos por DL_Track_US, valor por defecto
     APO_LENGTH_TRESH = 600     # Define el umbral de longitud para los contornos de la aponeurosis.
     MIN_WIDTH = 60     # Define el ancho mínimo entre aponeurosis.
 
@@ -178,7 +191,7 @@ def process_aponeurosis_mask_comprehensive(mask_path: str):
     low_y_new = savgol_filter(low_y, min(len(low_y)-1 if len(low_y) % 2 == 0 else len(low_y), 81), 2) # Suaviza los datos del borde inferior con un filtro Savitzky-Golay.
 
 #--- Generación de la Máscara ROI ---
-    ex_mask = np.zeros(thresh.shape, np.uint8) # Crea una máscara en negro para la región de interés (ROI).
+    ex_mask_comprehensive = np.zeros(thresh.shape, np.uint8) # Crea una máscara en negro para la región de interés (ROI).
     f_upp = np.poly1d(np.polyfit(upp_x, upp_y_new, 2)) # Ajusta un polinomio de segundo grado a los datos del borde superior.
     f_low = np.poly1d(np.polyfit(low_x, low_y_new, 2)) # Ajusta un polinomio de segundo grado a los datos del borde inferior.
 
@@ -189,7 +202,7 @@ def process_aponeurosis_mask_comprehensive(mask_path: str):
         ymin = int(np.floor(f_upp(x))) # Calcula la coordenada y mínima (borde superior).
         ymax = int(np.ceil(f_low(x))) # Calcula la coordenada y máxima (borde inferior).
         ymin = max(0, ymin) # Asegura que ymin no sea menor que 0.
-        ymax = min(ex_mask.shape[0], ymax) # Asegura que ymax no exceda la altura de la imagen.
-        ex_mask[ymin:ymax, x] = 255 # Rellena la región entre los dos bordes en la máscara de ROI.
+        ymax = min(ex_mask_comprehensive.shape[0], ymax) # Asegura que ymax no exceda la altura de la imagen.
+        ex_mask_comprehensive[ymin:ymax, x] = 255 # Rellena la región entre los dos bordes en la máscara de ROI.
 
-    return ex_mask
+    return ex_mask_comprehensive
