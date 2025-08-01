@@ -32,7 +32,10 @@ El script depende de varias librerías de Python para su funcionamiento:
 
 #### `process_aponeurosis_mask`
 
-Esta función está optimizada para procesar máscaras de aponeurosis generadas manualmente. Asume que la máscara de entrada es una representación limpia y no requiere un preprocesamiento extenso.
+Esta función está optimizada para procesar máscaras de aponeurosis generadas manualmente. Asume que la máscara de entrada es una representación limpia y no requiere un preprocesamiento extenso, podemos asumir que:
+*   Las aponeurosis están claramente definidas y no contienen ruido.
+*   No hay necesidad de fusionar contornos, ya que las aponeurosis son líneas continuas.
+*   El refinamiento morfológico es redundante, ya que la máscara ya es una representación ideal.
 
 #### `process_aponeurosis_mask_comprehensive`
 
