@@ -56,6 +56,9 @@ La principal diferencia radica en el nivel de preprocesamiento:
     *   Aplica esqueletización y operaciones morfológicas para refinar las aponeurosis.
     *   Recomendada para máscaras automáticas o ruidosas.
 
+***Una diferencia clave, se observa que la funcion mas robusta `_comprehensive` abarca mas area en la imagen, y no necesariamente pertenece al area del ROI
+del musculoesqueletico(ME). Sino, de los costados, es decir del marco de informacion que no forma parte como tal de la imagen de US del paciente.***
+
 ### Flujo de Trabajo Detallado
 Ambas funciones siguen un flujo de trabajo similar, pero `process_aponeurosis_mask_comprehensive` incluye pasos adicionales:
 
