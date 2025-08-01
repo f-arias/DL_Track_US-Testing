@@ -38,6 +38,7 @@ Esta función está optimizada para procesar máscaras de aponeurosis generadas 
 
 Esta función es una versión más robusta, adecuada para máscaras que pueden contener ruido o discontinuidades, como las generadas automáticamente. Incluye pasos adicionales de fusión de contornos y refinamiento morfológico.
 
+
 ### Diferencias Clave entre las Funciones
 
 La principal diferencia radica en el nivel de preprocesamiento:
@@ -53,7 +54,6 @@ La principal diferencia radica en el nivel de preprocesamiento:
     *   Recomendada para máscaras automáticas o ruidosas.
 
 ### Flujo de Trabajo Detallado
-
 Ambas funciones siguen un flujo de trabajo similar, pero `process_aponeurosis_mask_comprehensive` incluye pasos adicionales:
 
 1.  **Carga y Preprocesamiento Básico**: Ambas funciones leen la imagen, la convierten a escala de grises y la binarizan.
@@ -62,3 +62,4 @@ Ambas funciones siguen un flujo de trabajo similar, pero `process_aponeurosis_ma
 4.  **Extracción de Bordes y Suavizado**: Ambas extraen los bordes y los suavizan.
 5.  **Generación de la Máscara ROI**: Ambas ajustan un polinomio a los bordes y rellenan el área intermedia.
 6.  **Retorno**: Ambas devuelven la máscara ROI.
+
