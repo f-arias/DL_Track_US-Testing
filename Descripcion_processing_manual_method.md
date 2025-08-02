@@ -1,6 +1,6 @@
-# Explicación Detallada del Módulo `processing_manual_method.py`
+# Explicación Detallada del Módulo `US_manual_tools.py`
 
-Este documento ofrece una explicación exhaustiva del módulo `processing_manual_method.py`, cuyo propósito es procesar una máscara de aponeurosis de una imagen de ultrasonido para generar una máscara de Región de Interés (ROI) que delimita el músculo.
+Este documento ofrece una explicación exhaustiva del módulo `US_manual_tools.py`, cuyo propósito es procesar una máscara de aponeurosis de una imagen de ultrasonido para generar una máscara de Región de Interés (ROI) que delimita el músculo.
 
 ## Outline
 
