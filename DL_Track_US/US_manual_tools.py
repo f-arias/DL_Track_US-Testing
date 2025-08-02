@@ -1,3 +1,51 @@
+# -*- coding: utf-8 -*-
+"""
+Description
+-----------
+Este módulo proporciona un conjunto de herramientas y funciones de ayuda
+para el análisis manual y el etiquetado de imágenes de ultrasonido musculoesquelético.
+
+Este módulo complementa los métodos de análisis automático (basados en CNN) 
+de DL_Track_US, ofreciendo una alternativa o un método de validación 
+("gold standard") controlado por el usuario.
+
+Por ultimo, este modulo se baso en gran medida al repositorio DL_Track_US
+Ritsche, P., Seynnes, O., & Cronin, N. (2023). 
+DL_Track_US: a python package to analyse muscle ultrasonography images. 
+Journal of Open Source Software, 8(85), 5206. https://doi.org/10.21105/joss.05206
+
+Functions Scope
+---------------
+get_manual_polyline(image, window_name="Seleccionar Puntos")
+    Muestra una imagen y permite al usuario trazar una polilínea haciendo clic.
+    Devuelve las coordenadas (x, y) de la línea trazada.
+
+select_manual_points(image, num_points=2, window_name="Seleccionar Puntos")
+    Permite al usuario seleccionar un número específico de puntos en la imagen.
+    Ideal para marcar puntos de calibración o extremos de fascículos.
+
+calculate_thickness_from_lines(line_upper, line_lower)
+    Calcula el grosor muscular promedio entre dos líneas (aponeurosis).
+
+calculate_angle_between_lines(line1, line2)
+    Calcula el ángulo de intersección entre dos líneas, útil para el
+    ángulo de pennación.
+
+Notes
+-----
+- Las funciones interactivas (como `get_manual_polyline`) dependen de un backend
+  de GUI que pueda manejar eventos de mouse (ej. la ventana de HighGUI de OpenCV).
+- Todas las coordenadas devueltas están en unidades de píxeles, con el origen
+  (0,0) en la esquina superior izquierda de la imagen.
+- Una diferencia se observa que la funcion mas robusta "_comprehensive"
+abarca mas area en la imagen, y no necesariamente pertenece al area del ROI
+del musculoesqueletico(ME). Sino, de los costados, es decir del marco de informacion
+que no forma parte como tal de la imagen de US del paciente.
+----
+
+@author: Felipe Arias
+"""
+# --- Importaciones de Dependencias ---
 import cv2
 import numpy as np
 import imageio
@@ -5,6 +53,7 @@ from scipy.signal import savgol_filter
 from skimage.morphology import skeletonize
 from DL_Track_US.gui_helpers.do_calculations import sortContours, contourEdge
 
+# --- Definición de Funciones ---
 def process_aponeurosis_mask(mask_path: str):
     """
     Procesa una máscara de aponeurosis para crear una máscara de ROI.
@@ -125,7 +174,8 @@ def process_aponeurosis_mask_comprehensive(mask_path: str):
     if len(contours_re) < 1: # Comprueba si hay al menos un contorno.
         return None 
 
-    contours, _ = sortContours(contours_re) # Ordena los contornos.
+    # Ordena los contornos de arriba(superfial) hacia abajo(profundo), NO las coordenadas.
+    contours, _ = sortContours(contours_re) 
     
     if contours is None: # Comprueba si los contornos se pudieron ordenar.
         return None     # Devuelve None si no se pudieron ordenar los contornos.
@@ -141,8 +191,10 @@ def process_aponeurosis_mask_comprehensive(mask_path: str):
 
     maskT = np.zeros(thresh.shape, np.uint8) # Crea una máscara en negro del mismo tamaño que la imagen binarizada.
     for cnt in contours_re2: # Itera sobre los nuevos contornos.
+    #drawContours(imagen_de_destino,contornos,indice de contorno a dibujar, valor de pixel, thickness=-1 rellena todo el area del contorno)
         cv2.drawContours(maskT, [cnt], 0, 255, -1) # Dibuja los contornos en la máscara.
 
+    # Conectando contornos muy cercanos para fusionarlos  
     xs1 = [c[0][0] for c in contours_re2] # Obtiene las coordenadas x iniciales de cada contorno.
     xs2 = [c[-1][0] for c in contours_re2] # Obtiene las coordenadas x finales de cada contorno.
     ys1 = [c[0][1] for c in contours_re2] # Obtiene las coordenadas y iniciales de cada contorno.
@@ -161,6 +213,7 @@ def process_aponeurosis_mask_comprehensive(mask_path: str):
     skeleton = skeletonize(maskT).astype(np.uint8) # Aplica esqueletización a la máscara para obtener una representación de una sola línea.
     kernel = np.ones((3, 7), np.uint8) # Define un kernel para las operaciones morfológicas.
     dilate = cv2.dilate(skeleton, kernel, iterations=15) # Dilata el esqueleto para engrosar las líneas.
+    # A pesar que se usa erode, hizo que las aponeurosis sean un poco mas largas
     erode = cv2.erode(dilate, kernel, iterations=10) # Erosiona la imagen dilatada para refinar las líneas.
 
 #--- Extracción de Bordes y Suavizado ---
