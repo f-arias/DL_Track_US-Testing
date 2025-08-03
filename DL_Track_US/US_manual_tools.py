@@ -265,9 +265,7 @@ def process_aponeurosis_mask_comprehensive(mask_path: str):
     return ex_mask_comprehensive
 
 def overlay_apo_mask (image_apo_path: str ,mask_apo_path: str ,opacity = 0.5) -> np.ndarray:
-    """
-    Ve si quieres agregar el parametro de color del trazado de la aponeurosis
-    
+    """    
     Parameters
     ----------
     image_apo_path : str
@@ -309,7 +307,6 @@ def overlay_apo_mask (image_apo_path: str ,mask_apo_path: str ,opacity = 0.5) ->
     colored_image_apo = cv2.cvtColor(image_apo, cv2.COLOR_GRAY2BGR)
 
     # Overlay the colored mask on the ultrasound image
-    # configurar opacity
     overlaid_image = cv2.addWeighted (colored_image_apo, 1, colored_mask_apo, opacity, 0)
 
     return overlaid_image
