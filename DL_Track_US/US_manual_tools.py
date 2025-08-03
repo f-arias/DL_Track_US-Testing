@@ -62,10 +62,12 @@ def process_aponeurosis_mask(mask_path: str):
     Está optimizada para máscaras de aponeurosis generadas manualmente, que son
     generalmente más limpias y no requieren un preprocesamiento extenso.
 
-    Args:
+    Parameters:
+    ----------
         mask_path (str): Ruta a la máscara de aponeurosis.
 
     Returns:
+    ----------
         np.ndarray: La máscara de ROI.
 
     Nota :  - Para más compresion leer Descripcion_processing_manual_method.md
@@ -139,10 +141,12 @@ def process_aponeurosis_mask_comprehensive(mask_path: str):
     discontinuidades, como las generadas automáticamente. Incluye pasos adicionales
     de fusión de contornos y refinamiento morfológico.
 
-    Args:
+    Parameters:
+    ----------
         mask_path (str): Ruta a la máscara de aponeurosis.
 
     Returns:
+    ----------
         np.ndarray (uint8): La máscara de ROI.
     
     Nota :  - Para más compresion leer Descripcion_processing_manual_method.md
@@ -259,3 +263,53 @@ def process_aponeurosis_mask_comprehensive(mask_path: str):
         ex_mask_comprehensive[ymin:ymax, x] = 255 # Rellena la región entre los dos bordes en la máscara de ROI.
 
     return ex_mask_comprehensive
+
+def overlay_apo_mask (image_apo_path: str ,mask_apo_path: str ,opacity = 0.5) -> np.ndarray:
+    """
+    Ve si quieres agregar el parametro de color del trazado de la aponeurosis
+    
+    Parameters
+    ----------
+    image_apo_path : str
+        DESCRIPTION.
+    mask_apo_path : str
+        DESCRIPTION.
+    opacity : TYPE, optional
+        DESCRIPTION. The default is 0.5.
+
+    Returns
+    -------
+    None.
+
+    """
+#--- Carga de imagen ---
+    try:
+        mask_apo = imageio.imread(mask_apo_path)
+        image_apo = imageio.imread (image_apo_path)
+    except FileNotFoundError as e:
+        print(f"Error reading file: {e}")
+        return None
+
+#--- Proprocesamiento de imagen ---
+    if mask_apo.ndim == 3:  #Si es de 3-canal
+        mask_apo = cv2.cvtColor(mask_apo, cv2.COLOR_BGR2GRAY)
+        
+    if image_apo.ndim == 3:  #Si es de 3-canal
+        image_apo = cv2.cvtColor(image_apo, cv2.COLOR_BGR2GRAY)
+    
+    
+    # Ensure both images have the same dimensions by resizing the mask
+    image_apo = cv2.resize (image_apo, (mask_apo.shape[1], mask_apo.shape[0]))
+                                            
+    # Create a colored mask with green color for the white regions in the mask
+    colored_mask_apo = cv2.cvtColor (mask_apo, cv2.COLOR_GRAY2BGR)
+    colored_mask_apo [mask_apo > 0] = [0, 255, 0]  # Green color for mask regions
+
+    # Convert the ultrasound image to color
+    colored_image_apo = cv2.cvtColor(image_apo, cv2.COLOR_GRAY2BGR)
+
+    # Overlay the colored mask on the ultrasound image
+    # configurar opacity
+    overlaid_image = cv2.addWeighted (colored_image_apo, 1, colored_mask_apo, opacity, 0)
+
+    return overlaid_image
