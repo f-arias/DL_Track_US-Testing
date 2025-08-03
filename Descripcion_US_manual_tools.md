@@ -9,6 +9,7 @@ Este documento ofrece una explicación exhaustiva del módulo `US_manual_tools.p
 3.  [Funciones del Módulo](#funciones-del-módulo)
     *   [`process_aponeurosis_mask`](#process_aponeurosis_mask)
     *   [`process_aponeurosis_mask_comprehensive`](#process_aponeurosis_mask_comprehensive)
+    *   [`overlay_apo_mask`](#overlay_apo_mask)
 4.  [Diferencias Clave entre las Funciones](#diferencias-clave-entre-las-funciones)
 5.  [Flujo de Trabajo Detallado](#flujo-de-trabajo-detallado)
 
@@ -16,7 +17,7 @@ Este documento ofrece una explicación exhaustiva del módulo `US_manual_tools.p
 
 ### Introducción
 
-El objetivo principal de este módulo es proporcionar herramientas para procesar máscaras de aponeurosis y generar una máscara de ROI. El módulo ofrece dos funciones para este propósito, cada una adaptada a diferentes tipos de máscaras de entrada.
+El objetivo principal de este módulo es proporcionar herramientas para procesar máscaras de aponeurosis y generar una máscara de ROI. El módulo ofrece tres funciones para este propósito, cada una adaptada a diferentes tipos de máscaras de entrada.
 
 ### Dependencias
 
@@ -40,6 +41,13 @@ Esta función está optimizada para procesar máscaras de aponeurosis generadas 
 #### `process_aponeurosis_mask_comprehensive`
 
 Esta función es una versión más robusta, adecuada para máscaras que pueden contener ruido o discontinuidades, como las generadas automáticamente. Incluye pasos adicionales de fusión de contornos y refinamiento morfológico.
+
+#### `overlay_apo_mask`
+
+Esta función superpone una máscara de aponeurosis sobre una imagen de ultrasonido. Permite ajustar la opacidad y el color de la superposición, facilitando la visualización y validación de la máscara.
+
+*   **Opacidad**: Acepta un valor flotante entre 0.0 y 1.0.
+*   **Color**: Acepta 'Rojo', 'Verde' o 'Azul' como entrada de color.
 
 
 ### Diferencias Clave entre las Funciones

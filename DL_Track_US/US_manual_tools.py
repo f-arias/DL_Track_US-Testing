@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Description
+Descripción
 -----------
 Este módulo proporciona un conjunto de herramientas y funciones de ayuda
 para el análisis manual y el etiquetado de imágenes de ultrasonido musculoesquelético.
@@ -9,39 +9,28 @@ Este módulo complementa los métodos de análisis automático (basados en CNN)
 de DL_Track_US, ofreciendo una alternativa o un método de validación 
 ("gold standard") controlado por el usuario.
 
-Por ultimo, este modulo se baso en gran medida al repositorio DL_Track_US
+Este modulo se baso en gran medida al repositorio DL_Track_US
 Ritsche, P., Seynnes, O., & Cronin, N. (2023). 
 DL_Track_US: a python package to analyse muscle ultrasonography images. 
 Journal of Open Source Software, 8(85), 5206. https://doi.org/10.21105/joss.05206
 
-Functions Scope
----------------
-get_manual_polyline(image, window_name="Seleccionar Puntos")
-    Muestra una imagen y permite al usuario trazar una polilínea haciendo clic.
-    Devuelve las coordenadas (x, y) de la línea trazada.
+Alcance de las Funciones
+------------------------
+process_aponeurosis_mask(mask_path)
+    Procesa una máscara de aponeurosis para crear una máscara de ROI.
 
-select_manual_points(image, num_points=2, window_name="Seleccionar Puntos")
-    Permite al usuario seleccionar un número específico de puntos en la imagen.
-    Ideal para marcar puntos de calibración o extremos de fascículos.
+process_aponeurosis_mask_comprehensive(mask_path)
+    Procesa una máscara de aponeurosis con preprocesamiento completo.
 
-calculate_thickness_from_lines(line_upper, line_lower)
-    Calcula el grosor muscular promedio entre dos líneas (aponeurosis).
+overlay_apo_mask(image_apo_path, mask_apo_path, opacity=0.5, color='Verde')
+    Superpone una máscara de aponeurosis sobre una imagen de ultrasonido.
 
-calculate_angle_between_lines(line1, line2)
-    Calcula el ángulo de intersección entre dos líneas, útil para el
-    ángulo de pennación.
-
-Notes
+Notas
 -----
-- Las funciones interactivas (como `get_manual_polyline`) dependen de un backend
-  de GUI que pueda manejar eventos de mouse (ej. la ventana de HighGUI de OpenCV).
-- Todas las coordenadas devueltas están en unidades de píxeles, con el origen
-  (0,0) en la esquina superior izquierda de la imagen.
 - Una diferencia se observa que la funcion mas robusta "_comprehensive"
 abarca mas area en la imagen, y no necesariamente pertenece al area del ROI
 del musculoesqueletico(ME). Sino, de los costados, es decir del marco de informacion
 que no forma parte como tal de la imagen de US del paciente.
-----
 
 @author: Felipe Arias
 """
@@ -264,49 +253,66 @@ def process_aponeurosis_mask_comprehensive(mask_path: str):
 
     return ex_mask_comprehensive
 
-def overlay_apo_mask (image_apo_path: str ,mask_apo_path: str ,opacity = 0.5) -> np.ndarray:
-    """    
+def overlay_apo_mask(image_apo_path: str, mask_apo_path: str, opacity: float = 0.5, color: str = 'Verde') -> np.ndarray:
+    """
+    Superpone una máscara de aponeurosis sobre una imagen de ultrasonido con una opacidad y color personalizables.
+
     Parameters
     ----------
     image_apo_path : str
-        DESCRIPTION.
+        Ruta a la imagen de ultrasonido.
     mask_apo_path : str
-        DESCRIPTION.
-    opacity : TYPE, optional
-        DESCRIPTION. The default is 0.5.
+        Ruta a la máscara de aponeurosis.
+    opacity : float, optional
+        Nivel de opacidad para la superposición de la máscara. Debe ser un valor entre 0.0 y 1.0.
+        Por defecto es 0.5.
+    color : str, optional
+        Color para la superposición de la máscara. Los valores permitidos son 'Rojo', 'Verde' o 'Azul'.
+        Por defecto es 'Verde'.
 
     Returns
     -------
-    None.
-
+    np.ndarray
+        La imagen con la máscara superpuesta.
     """
-#--- Carga de imagen ---
+    # --- Validación de Parámetros ---
+    if not 0.0 <= opacity <= 1.0:
+        raise ValueError("La opacidad debe estar entre 0.0 y 1.0.")
+
+    color_map = {
+        'Rojo': [0, 0, 255],
+        'Verde': [0, 255, 0],
+        'Azul': [255, 0, 0]
+    }
+    if color not in color_map:
+        raise ValueError("El color debe ser 'Rojo', 'Verde' o 'Azul'.")
+
+    # --- Carga de Imágenes ---
     try:
         mask_apo = imageio.imread(mask_apo_path)
-        image_apo = imageio.imread (image_apo_path)
+        image_apo = imageio.imread(image_apo_path)
     except FileNotFoundError as e:
-        print(f"Error reading file: {e}")
+        print(f"Error al leer el archivo: {e}")
         return None
 
-#--- Proprocesamiento de imagen ---
-    if mask_apo.ndim == 3:  #Si es de 3-canal
+    # --- Preprocesamiento de Imágenes ---
+    if mask_apo.ndim == 3:  # Si es de 3 canales
         mask_apo = cv2.cvtColor(mask_apo, cv2.COLOR_BGR2GRAY)
         
-    if image_apo.ndim == 3:  #Si es de 3-canal
+    if image_apo.ndim == 3:  # Si es de 3 canales
         image_apo = cv2.cvtColor(image_apo, cv2.COLOR_BGR2GRAY)
     
-    
-    # Ensure both images have the same dimensions by resizing the mask
-    image_apo = cv2.resize (image_apo, (mask_apo.shape[1], mask_apo.shape[0]))
+    # Asegurar que ambas imágenes tengan las mismas dimensiones redimensionando la máscara
+    image_apo = cv2.resize(image_apo, (mask_apo.shape[1], mask_apo.shape[0]))
                                             
-    # Create a colored mask with green color for the white regions in the mask
-    colored_mask_apo = cv2.cvtColor (mask_apo, cv2.COLOR_GRAY2BGR)
-    colored_mask_apo [mask_apo > 0] = [0, 255, 0]  # Green color for mask regions
+    # Crear una máscara coloreada para las regiones blancas de la máscara
+    colored_mask_apo = cv2.cvtColor(mask_apo, cv2.COLOR_GRAY2BGR)
+    colored_mask_apo[mask_apo > 0] = color_map[color]
 
-    # Convert the ultrasound image to color
+    # Convertir la imagen de ultrasonido a color
     colored_image_apo = cv2.cvtColor(image_apo, cv2.COLOR_GRAY2BGR)
 
-    # Overlay the colored mask on the ultrasound image
-    overlaid_image = cv2.addWeighted (colored_image_apo, 1, colored_mask_apo, opacity, 0)
+    # Superponer la máscara coloreada sobre la imagen de ultrasonido
+    overlaid_image = cv2.addWeighted(colored_image_apo, 1, colored_mask_apo, opacity, 0)
 
     return overlaid_image
