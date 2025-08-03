@@ -9,6 +9,11 @@ Este módulo complementa los métodos de análisis automático (basados en CNN)
 de DL_Track_US, ofreciendo una alternativa o un método de validación 
 ("gold standard") controlado por el usuario.
 
+Este modulo se baso en gran medida al repositorio DL_Track_US
+Ritsche, P., Seynnes, O., & Cronin, N. (2023). 
+DL_Track_US: a python package to analyse muscle ultrasonography images. 
+Journal of Open Source Software, 8(85), 5206. https://doi.org/10.21105/joss.05206
+
 Alcance de las Funciones
 ------------------------
 process_aponeurosis_mask(mask_path)
@@ -22,8 +27,10 @@ overlay_apo_mask(image_apo_path, mask_apo_path, opacity=0.5, color='Verde')
 
 Notas
 -----
-- Las funciones interactivas dependen de un backend de GUI que pueda manejar eventos de mouse.
-- Todas las coordenadas devueltas están en unidades de píxeles.
+- Una diferencia se observa que la funcion mas robusta "_comprehensive"
+abarca mas area en la imagen, y no necesariamente pertenece al area del ROI
+del musculoesqueletico(ME). Sino, de los costados, es decir del marco de informacion
+que no forma parte como tal de la imagen de US del paciente.
 
 @author: Felipe Arias
 """
