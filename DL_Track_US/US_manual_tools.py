@@ -274,6 +274,11 @@ def overlay_apo_mask(image_apo_path: str, mask_apo_path: str, opacity: float = 0
     -------
     np.ndarray
         La imagen con la máscara superpuesta.
+
+    Nota :  
+    ----------
+        - Las lineas de codigo principales fueron extraidos del modulo 
+        DL_Track_US/gui_helpers/file_analysis.py
     """
     # --- Validación de Parámetros ---
     if not 0.0 <= opacity <= 1.0:
