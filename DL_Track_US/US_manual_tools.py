@@ -64,15 +64,14 @@ def process_aponeurosis_mask(mask_path: str):
             - Esta funcion esta basado en gran medida en el contenido 
             de DL_Track_US/doCalculations.
     """
-    # --- Validación de Parámetros de Entrada ---
-    # Se verifica si la ruta de la máscara es una cadena de texto.
-    if not isinstance(mask_path, str):
-        # Si no es una cadena, se lanza un error de tipo (TypeError).
-        raise TypeError("La ruta de la máscara (mask_path) debe ser una cadena de texto.")
-
     # Definidos por DL_Track_US, valor por defecto
     #APO_LENGTH_TRESH = 600
     #MIN_WIDTH = 60
+    
+    # --- Validación de Parámetros de Entrada ---
+    # Se verifica si la ruta de la máscara es una cadena de texto.
+    if not isinstance(mask_path, str):
+        raise TypeError("La ruta de la máscara (mask_path) debe ser una cadena de texto.")
     
 #--- Carga de imagen ---
     try:
@@ -103,25 +102,22 @@ def process_aponeurosis_mask(mask_path: str):
     #contours = [c for c in contours if len(c) > APO_LENGTH_TRESH]
     # Se comprueba si se encontraron al menos dos contornos (aponeurosis superior e inferior).
     if len(contours) < 2:
-        # Si no hay suficientes contornos, se retorna None.
         return None
 
     # Se ordenan los contornos de arriba hacia abajo.
     contours, _ = sortContours(contours)
     # Se comprueba si el ordenamiento de contornos fue exitoso.
     if contours is None:
-        # Si falló, se retorna None.
         return None
 
 #--- Obtencion de coordenadas de aponeurosis ---
-    # Se extraen las coordenadas del borde inferior ("B") del primer contorno (aponeurosis superior).
+    # Se extraen las coordenadas del borde inferior ("Bottom") del primer contorno (aponeurosis superior).
     upp_x, upp_y = contourEdge("B", contours[0])
-    # Se extraen las coordenadas del borde superior ("T") del segundo contorno (aponeurosis inferior).
+    # Se extraen las coordenadas del borde superior ("Top") del segundo contorno (aponeurosis inferior).
     low_x, low_y = contourEdge("T", contours[1])
 
     # Se comprueba si se extrajeron correctamente las coordenadas de ambos bordes.
     if len(upp_x) == 0 or len(low_x) == 0:
-        # Si falta alguno de los bordes, se retorna None.
         return None
 
     # Se suavizan las coordenadas 'y' de los bordes usando un filtro Savitzky-Golay.
@@ -178,15 +174,14 @@ def process_aponeurosis_mask_comprehensive(mask_path: str):
             - Esta funcion esta basado en gran medida en el contenido 
             de DL_Track_US/doCalculations.
     """
-    # --- Validación de Parámetros de Entrada ---
-    # Se verifica si la ruta de la máscara es una cadena de texto.
-    if not isinstance(mask_path, str):
-        # Si no es una cadena, se lanza un error de tipo (TypeError).
-        raise TypeError("La ruta de la máscara (mask_path) debe ser una cadena de texto.")
-
     #Definidos por DL_Track_US, valor por defecto
     APO_LENGTH_TRESH = 600     # Define el umbral de longitud para los contornos de la aponeurosis.
     MIN_WIDTH = 60     # Define el ancho mínimo entre aponeurosis.
+    
+    # --- Validación de Parámetros de Entrada ---
+    # Se verifica si la ruta de la máscara es una cadena de texto.
+    if not isinstance(mask_path, str):
+        raise TypeError("La ruta de la máscara (mask_path) debe ser una cadena de texto.")
 
 #--- Carga y Preprocesamiento de la Máscara ---
     try:
@@ -195,7 +190,6 @@ def process_aponeurosis_mask_comprehensive(mask_path: str):
     except FileNotFoundError as e: # Maneja el error si no se encuentra el archivo.
         # Imprime un mensaje de error.
         print(f"Error reading file: {e}")
-        # Devuelve None si no se puede leer el archivo.
         return None
 
     # Comprueba si la imagen es a color (3-dimensiones).
@@ -216,7 +210,6 @@ def process_aponeurosis_mask_comprehensive(mask_path: str):
     contours_re = [c for c in contours if len(c) > APO_LENGTH_TRESH]
     # Comprueba si hay al menos un contorno.
     if len(contours_re) < 1:
-        # Si no hay contornos, devuelve None.
         return None 
 
     # Ordena los contornos de arriba (superficial) hacia abajo (profundo).
@@ -224,7 +217,6 @@ def process_aponeurosis_mask_comprehensive(mask_path: str):
     
     # Comprueba si los contornos se pudieron ordenar.
     if contours is None:
-        # Devuelve None si no se pudieron ordenar.
         return None
 
     # Inicializa una lista para almacenar los nuevos contornos ordenados.
@@ -278,13 +270,9 @@ def process_aponeurosis_mask_comprehensive(mask_path: str):
     maskT[maskT > 0] = 1
 
 #--- Refinamiento de Aponeurosis ---
-    # Aplica esqueletización para obtener una representación de una sola línea.
     skeleton = skeletonize(maskT).astype(np.uint8)
-    # Define un kernel rectangular para las operaciones morfológicas.
     kernel = np.ones((3, 7), np.uint8)
-    # Dilata el esqueleto para engrosar las líneas.
     dilate = cv2.dilate(skeleton, kernel, iterations=15)
-    # Erosiona la imagen dilatada para refinar las líneas.
     erode = cv2.erode(dilate, kernel, iterations=10)
 
 #--- Extracción de Bordes y Suavizado ---
@@ -295,14 +283,12 @@ def process_aponeurosis_mask_comprehensive(mask_path: str):
 
     # Comprueba si hay al menos dos contornos (aponeurosis superior e inferior).
     if len(contoursE) < 2:
-        # Devuelve None si no se encuentran las dos aponeurosis.
         return None
 
     # Ordena los contornos.
     contoursE, _ = sortContours(contoursE)
     # Comprueba si los contornos se pudieron ordenar.
     if contoursE is None:
-        # Devuelve None si no se pudieron ordenar.
         return None
 
     # Obtiene el borde inferior ("B") del primer contorno (aponeurosis superior).
@@ -310,7 +296,7 @@ def process_aponeurosis_mask_comprehensive(mask_path: str):
 
     # Comprueba si la segunda aponeurosis está lo suficientemente separada de la primera.
     if contoursE[1][0, 0, 1] > contoursE[0][0, 0, 1] + MIN_WIDTH:
-        # Obtiene el borde superior ("T") del segundo contorno (aponeurosis inferior).
+        # Obtiene el borde superior ("Top") del segundo contorno (aponeurosis inferior).
         low_x, low_y = contourEdge("T", contoursE[1])
     else: # Si no están suficientemente separadas.
         # Comprueba si hay un tercer contorno.
@@ -323,7 +309,6 @@ def process_aponeurosis_mask_comprehensive(mask_path: str):
 
     # Comprueba si se encontraron los bordes superior e inferior.
     if len(upp_x) == 0 or len(low_x) == 0:
-        # Devuelve None si no se encontraron los bordes.
         return None
 
     # Suaviza los datos del borde superior con un filtro Savitzky-Golay.
@@ -332,7 +317,6 @@ def process_aponeurosis_mask_comprehensive(mask_path: str):
     low_y_new = savgol_filter(low_y, min(len(low_y)-1 if len(low_y) % 2 == 0 else len(low_y), 81), 2)
 
 #--- Generación de la Máscara ROI ---
-    # Crea una máscara en negro para la región de interés (ROI).
     ex_mask_comprehensive = np.zeros(thresh.shape, np.uint8)
     # Ajusta un polinomio de segundo grado a los datos del borde superior.
     f_upp = np.poly1d(np.polyfit(upp_x, upp_y_new, 2))
@@ -395,7 +379,6 @@ def overlay_apo_mask(image_apo_path: str, mask_apo_path: str, opacity: float = 0
 
     # Se verifica que el valor de opacidad esté en el rango de 0.0 a 1.0.
     if not 0.0 <= opacity <= 1.0:
-        # Si está fuera del rango, se lanza un error de valor (ValueError).
         raise ValueError("La opacidad debe estar entre 0.0 y 1.0.")
 
     # Se define un diccionario para mapear los nombres de los colores a sus valores BGR.
@@ -406,7 +389,6 @@ def overlay_apo_mask(image_apo_path: str, mask_apo_path: str, opacity: float = 0
     }
     # Se verifica si el color proporcionado es una de las claves válidas en el mapa de colores.
     if color not in color_map:
-        # Si no es un color válido, se lanza un error de valor (ValueError).
         raise ValueError("El color debe ser 'Rojo', 'Verde' o 'Azul'.")
 
     # --- Carga de Imágenes ---
@@ -418,7 +400,6 @@ def overlay_apo_mask(image_apo_path: str, mask_apo_path: str, opacity: float = 0
     except FileNotFoundError as e:
         # Si no se encuentra alguno de los archivos, se imprime un mensaje de error.
         print(f"Error al leer el archivo: {e}")
-        # Se retorna None para indicar que la operación falló.
         return None
 
     # --- Preprocesamiento de Imágenes ---
