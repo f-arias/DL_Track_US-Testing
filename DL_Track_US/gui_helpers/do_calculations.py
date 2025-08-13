@@ -921,11 +921,17 @@ def doCalculations_custom (
     fasc_threshold = float(dic["fascicle_detection_threshold"])
     apo_length_tresh = int(dic["aponeurosis_length_threshold"])
 
+    # Predice (infiere) ante nuevos datos, da una mascara de probabilidades
+    # float (0-1) para cada pixel con forma [1,512,512,1]
     pred_apo = model_apo.predict(original_image)
+    # Aplica una umbralizacion a partir de pixel >apo_th =0,2
     pred_apo_t = (pred_apo > apo_threshold).astype(np.uint8)
+    # Redimensiona la mascara de 512x512 a Height y Width de la imagen original
+    # Asi, podras superponer la mascara a la imagen
     pred_apo_t = resize(pred_apo_t, (1, h, w, 1))
+    # Quita las dimensiones de lote (batch) y canal, asi queda con dimension=2
     apo_image = np.reshape(pred_apo_t, (h, w))
-
+    
     # load the fascicle model
     pred_fasc = model_fasc.predict(original_image)
     pred_fasc_t = (pred_fasc > fasc_threshold).astype(np.uint8)  # SET FASC THS
