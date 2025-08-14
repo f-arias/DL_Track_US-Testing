@@ -29,4 +29,4 @@ Este trabajo se enmarca dentro del proyecto `DL_Track_US`, cuyo objetivo es el a
 2.  **Procesamiento y Refinamiento**: Las máscaras generadas se procesan para extraer contornos, filtrar ruido y suavizar las líneas.
 3.  **Cálculo de Parámetros**: Se calculan métricas clave de la arquitectura muscular como la longitud del fascículo (FL), el ángulo de pennación (PA) y el grosor muscular (MT).
 
-Los módulos en esta carpeta `custom_analysis` pueden ser utilizados como parte de flujos de trabajo alternativos o para generar datos de referencia (ground truth) para estos análisis automáticos.
+Los módulos en esta carpeta `lib_ultrasound_utils` pueden ser utilizados como parte de flujos de trabajo alternativos o para generar datos de referencia (ground truth) para estos análisis automáticos.
