@@ -48,7 +48,7 @@ Su objetivo es comparar el rendimiento de un modelo de segmentación (como el de
 | `jaccard_index()`        | Índice de Jaccard (IoU)               | Mide la intersección sobre la unión; penaliza más los errores que el Dice.          |
 | `sensitivity()`          | Sensibilidad (Recall)                 | Mide la fracción de la máscara real que fue correctamente identificada.             |
 | `precision()`            | Precisión                             | Mide qué tan "limpia" es la predicción, es decir, cuántos píxeles predichos son correctos. |
-| `hausdorff_distance()`   | Distancia de Hausdorff                | Mide el error máximo entre los contornos de las dos máscaras.                       |
+| `hausdorff_distance()`   | Distancia de Hausdorff                | Mide el error máximo entre contornos. Permite elegir la librería (`scipy`/`skimage`) y el método. |
 | `cohen_kappa()`          | Kappa de Cohen                        | Evalúa la concordancia entre las dos máscaras, corrigiendo el acuerdo por azar.     |
 
 **Ejemplo de Uso:**
@@ -64,6 +64,14 @@ mascara_prueba = np.array([[1, 1, 1], [1, 0, 0]], dtype=np.uint8)
 dice = US_metrics.dice_coefficient(mascara_referencia, mascara_prueba)
 iou = US_metrics.jaccard_index(mascara_referencia, mascara_prueba)
 
+# Calcular distancia de Hausdorff con diferentes opciones
+h_scipy = US_metrics.hausdorff_distance(mascara_referencia, mascara_prueba, library='scipy')
+h_skimage = US_metrics.hausdorff_distance(mascara_referencia, mascara_prueba, library='skimage', method='modified')
+
+
 print(f"Coeficiente de Dice: {dice:.4f}")
 print(f"Índice de Jaccard (IoU): {iou:.4f}")
+print(f"Hausdorff (SciPy): {h_scipy:.4f}")
+print(f"Hausdorff (scikit-image, modified): {h_skimage:.4f}")
+
 ```
