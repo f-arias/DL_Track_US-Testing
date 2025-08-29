@@ -165,46 +165,49 @@ def precision(reference_mask: np.ndarray, test_mask: np.ndarray, epsilon: float 
     return prec
 
 
-def hausdorff_distance(reference_mask: np.ndarray, test_mask: np.ndarray) -> float:
+def hausdorff_distance(reference_mask: np.ndarray, test_mask: np.ndarray, library: str = 'scipy', method: str = 'standard') -> float:
     """
-    Calcula la Distancia de Hausdorff entre los contornos de dos máscaras. 
-    Aplicarlo en aponeurosis.
+    Calcula la Distancia de Hausdorff entre los contornos de dos máscaras, permitiendo
+    seleccionar la biblioteca de cálculo (`scipy` o `skimage`) y el método.
 
-    Esta métrica mide la máxima distancia entre el contorno de una máscara y el contorno de la otra.
-    Es una medida del "peor error" en la delineación del borde. Un valor más bajo indica
-    una mayor similitud entre los contornos.
-    Evalúa la precisión geométrica, crucial para estructuras finas como las aponeurosis.
-
-    Nota:
-        Si una de las máscaras está completamente vacía, la distancia no se puede calcular
-        y la función devolverá `np.inf`.
+    Esta métrica mide la máxima distancia entre el contorno de una máscara y el de la otra,
+    siendo útil para evaluar la precisión geométrica, especialmente en estructuras finas
+    como las aponeurosis.
 
     Args:
-        reference_mask (np.ndarray): La máscara de referencia (ground truth).
-        test_mask (np.ndarray): La máscara de prueba.
+        reference_mask (np.ndarray): Máscara de referencia (ground truth).
+        test_mask (np.ndarray): Máscara de prueba.
+        library (str, optional): Biblioteca a utilizar. Puede ser 'scipy' o 'skimage'.
+                                 Por defecto es 'scipy'.
+        method (str, optional): Método para `skimage`. Puede ser 'standard' o 'modified'.
+                                Ignorado si `library` es 'scipy'. Por defecto es 'standard'.
 
     Returns:
-        float: El valor de la Distancia de Hausdorff. Puede ser `np.inf` si una máscara está vacía.
+        float: Valor de la Distancia de Hausdorff. Puede ser `np.inf` si una máscara está vacía.
+
+    Raises:
+        ValueError: Si la `library` o el `method` no son válidos.
     """
-    # Obtener las coordenadas de los píxeles del contorno (píxeles > 0)
     coords_reference = np.argwhere(reference_mask)
     coords_test = np.argwhere(test_mask)
 
-    # Si alguna de las máscaras no tiene píxeles positivos, la distancia es infinita
     if len(coords_reference) == 0 or len(coords_test) == 0:
         return np.inf
 
-    # Calcular la distancia de Hausdorff dirigida en ambas direcciones
-    h1 = hausdorff_distance_scipy (coords_reference, coords_test)[0]
-    h2 = hausdorff_distance_scipy (coords_test, coords_reference)[0]
+    if library == 'scipy':
+        h1 = hausdorff_distance_scipy(coords_reference, coords_test)[0]
+        h2 = hausdorff_distance_scipy(coords_test, coords_reference)[0]
+        return max(h1, h2)
 
-    #!!! Alternativa el uso de hausdorff_skimage 
-    # method = {‘standard’, ‘modified’}
-    #h1 = hausdorff_distance_skimage (coords_reference, coords_test,method='standard')
-    #h2 = hausdorff_distance_skimage (coords_test, coords_reference,method='standard')
+    elif library == 'skimage':
+        if method not in ['standard', 'modified']:
+            raise ValueError("El método para 'skimage' debe ser 'standard' o 'modified'.")
 
-    # La distancia de Hausdorff es el máximo de las dos distancias dirigidas
-    return max(h1, h2)
+        dist = hausdorff_distance_skimage(coords_reference, coords_test, method=method)
+        return dist
+
+    else:
+        raise ValueError("La biblioteca debe ser 'scipy' o 'skimage'.")
 
 
 def cohen_kappa(reference_mask: np.ndarray, test_mask: np.ndarray) -> float:
