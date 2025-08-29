@@ -30,3 +30,40 @@ Este trabajo se enmarca dentro del proyecto `DL_Track_US`, cuyo objetivo es el a
 3.  **Cálculo de Parámetros**: Se calculan métricas clave de la arquitectura muscular como la longitud del fascículo (FL), el ángulo de pennación (PA) y el grosor muscular (MT).
 
 Los módulos en esta carpeta `lib_ultrasound_utils` pueden ser utilizados como parte de flujos de trabajo alternativos o para generar datos de referencia (ground truth) para estos análisis automáticos.
+
+---
+
+### 2. `US_metrics.py`
+
+Este módulo proporciona un conjunto de herramientas estandarizadas y robustas para la evaluación cuantitativa de las máscaras de segmentación.
+
+**Propósito Principal:**
+Su objetivo es comparar el rendimiento de un modelo de segmentación (como el de `DL_Track_US`) con una máscara de referencia o "ground truth" (ej. delineada manualmente). Permite una evaluación objetiva mediante métricas estándar en la literatura de visión por computador.
+
+**Métricas Implementadas:**
+
+| Función                  | Métrica                               | Descripción Breve                                                                   |
+| :----------------------- | :------------------------------------ | :---------------------------------------------------------------------------------- |
+| `dice_coefficient()`     | Coeficiente de Dice (F1-Score)        | La métrica más común para superposición, sensible al tamaño de las máscaras.        |
+| `jaccard_index()`        | Índice de Jaccard (IoU)               | Mide la intersección sobre la unión; penaliza más los errores que el Dice.          |
+| `sensitivity()`          | Sensibilidad (Recall)                 | Mide la fracción de la máscara real que fue correctamente identificada.             |
+| `precision()`            | Precisión                             | Mide qué tan "limpia" es la predicción, es decir, cuántos píxeles predichos son correctos. |
+| `hausdorff_distance()`   | Distancia de Hausdorff                | Mide el error máximo entre los contornos de las dos máscaras.                       |
+| `cohen_kappa()`          | Kappa de Cohen                        | Evalúa la concordancia entre las dos máscaras, corrigiendo el acuerdo por azar.     |
+
+**Ejemplo de Uso:**
+```python
+import numpy as np
+from DL_Track_US.lib_ultrasound_utils import US_metrics
+
+# Crear máscaras binarias de ejemplo
+mascara_referencia = np.array([[1, 1, 0], [1, 1, 0]], dtype=np.uint8)
+mascara_prueba = np.array([[1, 1, 1], [1, 0, 0]], dtype=np.uint8)
+
+# Calcular métricas
+dice = US_metrics.dice_coefficient(mascara_referencia, mascara_prueba)
+iou = US_metrics.jaccard_index(mascara_referencia, mascara_prueba)
+
+print(f"Coeficiente de Dice: {dice:.4f}")
+print(f"Índice de Jaccard (IoU): {iou:.4f}")
+```
