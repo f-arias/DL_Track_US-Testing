@@ -3,7 +3,7 @@
 Este documento resume los componentes clave y el flujo de ejecución para el análisis automático de imágenes estáticas dentro del paquete `DL_Track_US`.
 El diagrama de flujo se encuentra en 🗺️[*Diagrama de FLujo*](https://github.com/f-arias/DL_Track_US-Testing/blob/158555c5741e77336c7647cb1f360acb5229c85c/Diagrama%20de%20flujo%20DL_Track_US.html) ,al igual que en Zotero/ Su Articulo de revista Academica/ Archivos adjuntos.
 
-**NOTA: El módulo *DL_Track_US/US_manual_tools.py* para procesar las imágenes de referencia del método manual se explica en [Descripcion](./Descripcion_US_manual_tools.md).**
+**NOTA: El módulo *DL_Track_US/US_manual_tools.py* para procesar las imágenes de referencia del método manual se explica en [Descripcion](DL_Track_US/lib_ultrasound_utils/README.md).**
 
 ---
 
