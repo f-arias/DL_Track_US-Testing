@@ -16,6 +16,9 @@ Journal of Open Source Software, 8(85), 5206. https://doi.org/10.21105/joss.0520
 
 Alcance de las Funciones
 ------------------------
+calculate_musa_thickness(aponeurosis_sup, aponeurosis_deep, scale='pp', pixel_spacing=1.0)
+    Calcula el Grosor Muscular utilizando el método MUSA (Muscle Ultrasound Analysis).
+
 process_aponeurosis_mask(mask_path)
     Procesa una máscara de aponeurosis para crear una máscara de ROI.
 
@@ -41,8 +44,205 @@ import imageio
 from scipy.signal import savgol_filter
 from skimage.morphology import skeletonize
 from DL_Track_US.gui_helpers.do_calculations import sortContours, contourEdge
+import warnings
 
 # --- Definición de Funciones ---
+
+def calculate_musa_thickness(aponeurosis_sup, aponeurosis_deep, scale='pp', pixel_spacing=1.0):
+    """
+    Calcula el Grosor Muscular utilizando el método MUSA (Muscle Ultrasound Analysis).
+    Basado en la "Métrica de Distancia de Línea Central" descrita por Caresio et al. (2017).
+
+    El algoritmo realiza los siguientes pasos detallados:
+    1. Ajusta modelos lineales (líneas rectas) a los puntos de aponeurosis proporcionados.
+       Se usa la regresión lineal para obtener la pendiente (m) y el intercepto (c) de la forma y = mx + c.
+       (Nota: Caresio et al. usan polinomios; actualmente ASSIST usa líneas Hough, por lo que el ajuste lineal es exacto).
+
+    2. Calcula la línea central geométrica (bisectriz) entre las dos líneas.
+       - Se obtienen los ángulos de inclinación de ambas aponeurosis con respecto al eje X usando arctan(m).
+       - El ángulo de la línea central es el promedio de estos dos ángulos: theta_c = (theta_s + theta_d) / 2.
+       - Si las líneas son paralelas, el intercepto c_c es el promedio de los interceptos.
+       - Si las líneas se cruzan, se calcula el punto de intersección y se fuerza a la línea central a pasar por él.
+
+    3. Define cuerdas perpendiculares a la línea central a intervalos regulares.
+       - Se muestrea la línea central a lo largo del eje X (x_samples).
+       - En cada punto muestreado, se define una recta perpendicular. La pendiente perpendicular es el inverso negativo
+         de la pendiente de la línea central: m_perp = -1 / m_c.
+       - Se calcula el intercepto de cada cuerda perpendicular (c_perp) usando el punto actual de la línea central.
+
+    4. Encuentra las intersecciones de estas cuerdas con las aponeurosis superficial y profunda.
+       - Se resuelve el sistema de ecuaciones lineales para encontrar dónde la recta perpendicular cruza a la aponeurosis superficial
+         y a la profunda.
+       - x_int = (c_aponeurosis - c_perp) / (m_perp - m_aponeurosis)
+
+    5. Calcula la longitud de cada cuerda y retorna el promedio.
+       - Se usa la distancia Euclidiana entre los puntos de intersección superior e inferior.
+
+    Glosario de Variables Internas:
+    - m_s, c_s: Pendiente (slope) y Intercepto (y-intercept) de la aponeurosis superficial (y = m_s * x + c_s).
+    - m_d, c_d: Pendiente y Intercepto de la aponeurosis profunda.
+    - theta_s, theta_d: Ángulos de inclinación (en radianes) de las aponeurosis respecto al eje X.
+    - theta_c: Ángulo de inclinación (en radianes) de la línea central (bisectriz).
+    - m_c, c_c: Pendiente e Intercepto de la línea central.
+    - x_samples: Array con las coordenadas X donde se realizarán las mediciones (muestreo).
+    - m_perp: Pendiente de las cuerdas perpendiculares a la línea central.
+    - y_samples_c: Coordenadas Y correspondientes a x_samples en la línea central.
+    - c_perps: Array de interceptos para cada cuerda perpendicular generada.
+    - x_is, y_is: Coordenadas (X, Y) de intersección entre la cuerda y la aponeurosis superficial.
+    - x_id, y_id: Coordenadas (X, Y) de intersección entre la cuerda y la aponeurosis profunda.
+    - distances: Array con las distancias Euclidianas calculadas para cada cuerda.
+
+    Argumentos:
+        aponeurosis_sup (np.ndarray): Matriz (N, 2) de coordenadas (x, y) para la aponeurosis superficial.
+                                      También puede ser una tupla de matrices (x, y).
+        aponeurosis_deep (np.ndarray): Matriz (M, 2) de coordenadas (x, y) para la aponeurosis profunda.
+                                       También puede ser una tupla de matrices (x, y).
+        scale (str): Escala de salida. 'pp' para píxeles (por defecto) o 'mm' para milímetros.
+        pixel_spacing (float): Factor de calibración en mm/píxel. Requerido si scale='mm'. Por defecto es 1.0.
+
+    Retorna:
+        dict: Un diccionario que contiene:
+            'mean_thickness': Grosor medio en la escala seleccionada.
+            'std_thickness': Desviación estándar del grosor en la escala seleccionada.
+            'scale': La escala utilizada ('pp' o 'mm').
+            'centerline_coords': Matriz (K, 2) de puntos en la línea central (para visualización).
+            'chords': Lista de pares de tuplas [((x1,y1), (x2,y2)), ...] definiendo las cuerdas (para visualización).
+    """
+
+    # Ayuda para estandarizar la entrada
+    def parse_input(data):
+        if isinstance(data, (tuple, list)):
+            if len(data) == 2 and isinstance(data[0], (np.ndarray, list)):
+                 # Asumiendo (x_array, y_array)
+                 return np.column_stack((data[0], data[1]))
+        if isinstance(data, np.ndarray):
+            if data.shape[1] == 2:
+                return data
+            elif data.shape[0] == 2:
+                return data.T
+        raise ValueError("Formato de entrada inválido para coordenadas de aponeurosis. Se espera matriz (N, 2) o tupla (x, y).")
+
+    pts_sup = parse_input(aponeurosis_sup)
+    pts_deep = parse_input(aponeurosis_deep)
+
+    # 1. Ajustar Líneas (y = mx + c)
+    # Usando np.polyfit con deg=1
+    if len(pts_sup) < 2 or len(pts_deep) < 2:
+         warnings.warn("No hay suficientes puntos para calcular el grosor.")
+         return {'mean_thickness': 0, 'std_thickness': 0, 'scale': scale}
+
+    m_s, c_s = np.polyfit(pts_sup[:, 0], pts_sup[:, 1], 1)
+    m_d, c_d = np.polyfit(pts_deep[:, 0], pts_deep[:, 1], 1)
+
+    # Definir el rango de X para evaluar (intersección de los rangos X de ambas líneas)
+    min_x = max(np.min(pts_sup[:, 0]), np.min(pts_deep[:, 0]))
+    max_x = min(np.max(pts_sup[:, 0]), np.max(pts_deep[:, 0]))
+
+    if min_x >= max_x:
+        warnings.warn("Las aponeurosis no se superponen en el eje X.")
+        return {'mean_thickness': 0, 'std_thickness': 0, 'scale': scale}
+
+    # 2. Calcular Línea Central
+    # La línea central es la bisectriz angular.
+    # Ángulo de las líneas
+    theta_s = np.arctan(m_s)
+    theta_d = np.arctan(m_d)
+
+    # Ángulo de la bisectriz
+    theta_c = (theta_s + theta_d) / 2.0
+    m_c = np.tan(theta_c)
+
+    # Para encontrar c_c (intersección), necesitamos un punto en la bisectriz.
+    # Si las líneas se cruzan, la bisectriz pasa a través de la intersección.
+    # Intersección X: m_s * x + c_s = m_d * x + c_d => x (m_s - m_d) = c_d - c_s
+    if np.isclose(m_s, m_d):
+        # Líneas paralelas
+        c_c = (c_s + c_d) / 2.0
+        # Línea central es y = m_c * x + c_c (donde m_c aprox m_s aprox m_d)
+    else:
+        x_int = (c_d - c_s) / (m_s - m_d)
+        y_int = m_s * x_int + c_s
+        # La línea central pasa por (x_int, y_int) con pendiente m_c
+        # y - y_int = m_c (x - x_int) => y = m_c * x + (y_int - m_c * x_int)
+        c_c = y_int - m_c * x_int
+
+    # 3. & 4. Cuerdas Perpendiculares e Intersecciones
+    # Muestreamos puntos a lo largo de la línea central dentro del rango X
+    x_samples = np.linspace(min_x, max_x, num=int(max_x - min_x + 1))
+
+    # Pendiente perpendicular
+    if np.isclose(m_c, 0):
+        m_perp = 1e9 # Vertical
+    else:
+        m_perp = -1.0 / m_c
+
+    distances = []
+    chords = []
+    centerline_coords = []
+
+    # ¿Enfoque vectorizado para eficiencia?
+    # Intersección de Línea 1 (y = m1 x + c1) y Línea 2 (y = m2 x + c2)
+    # x = (c2 - c1) / (m1 - m2)
+    # Aquí Línea 1 es la cuerda: y - y_c = m_perp (x - x_c) => y = m_perp * x + (y_c - m_perp * x_c)
+    # Sea c_perp = y_c - m_perp * x_c
+
+    y_samples_c = m_c * x_samples + c_c
+    c_perps = y_samples_c - m_perp * x_samples
+
+    # Intersecciones con Sup (y = m_s x + c_s)
+    # m_perp * x + c_perp = m_s * x + c_s
+    # x * (m_perp - m_s) = c_s - c_perp
+    # x_is = (c_s - c_perp) / (m_perp - m_s)
+
+    # Manejamos el caso vertical (m_perp grande) por separado o aseguramos robustez
+    if np.abs(m_perp) > 1e5:
+        # Cuerdas verticales (aprox)
+        x_is = x_samples
+        y_is = m_s * x_is + c_s
+
+        x_id = x_samples
+        y_id = m_d * x_id + c_d
+    else:
+        denom_s = m_perp - m_s
+        x_is = (c_s - c_perps) / denom_s
+        y_is = m_s * x_is + c_s
+
+        denom_d = m_perp - m_d
+        x_id = (c_d - c_perps) / denom_d
+        y_id = m_d * x_id + c_d
+
+    # Calcular Distancias
+    dx = x_is - x_id
+    dy = y_is - y_id
+    dists = np.sqrt(dx**2 + dy**2)
+
+    distances = dists
+
+    # Almacenar datos de visualización (submuestreados para claridad)
+    step = max(1, len(x_samples) // 20) # Mostrar ~20 cuerdas
+    for i in range(0, len(x_samples), step):
+        chords.append(((x_is[i], y_is[i]), (x_id[i], y_id[i])))
+        centerline_coords.append((x_samples[i], y_samples_c[i]))
+
+    # 5. Promedio
+    mean_dist_px = np.mean(distances)
+    std_dist_px = np.std(distances)
+
+    final_mean = mean_dist_px
+    final_std = std_dist_px
+
+    if scale == 'mm':
+        final_mean = mean_dist_px * pixel_spacing
+        final_std = std_dist_px * pixel_spacing
+
+    return {
+        'mean_thickness': final_mean,
+        'std_thickness': final_std,
+        'scale': scale,
+        'centerline_coords': np.column_stack((x_samples, y_samples_c)), # Retornar todos los puntos
+        'chords': chords # Cuerdas muestreadas
+    }
+
 def process_aponeurosis_mask(mask_path: str):
     """
     Procesa una máscara de aponeurosis para crear una máscara de ROI.
@@ -68,7 +268,7 @@ def process_aponeurosis_mask(mask_path: str):
     #APO_LENGTH_TRESH = 600
     #MIN_WIDTH = 60
     
-    # --- Validación de Parámetros de Entrada ---
+# --- Validación de Parámetros de Entrada ---
     # Se verifica si la ruta de la máscara es una cadena de texto.
     if not isinstance(mask_path, str):
         raise TypeError("La ruta de la máscara (mask_path) debe ser una cadena de texto.")
