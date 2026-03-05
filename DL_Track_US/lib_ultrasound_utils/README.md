@@ -4,7 +4,8 @@ Los módulos en esta carpeta `lib_ultrasound_utils` pueden ser utilizados como p
 
 El objetivo es mantener el código original de la librería intacto mientras se permite la adición de nuevas funcionalidades, pruebas y flujos de trabajo de análisis.
 
-***NOTA: EL fichero lib_ultrasound_utils se encuentra en los repositorios DL_track_US-testing , Algoritmo ASSIST y SMA-testing , en ASSIST estara la version mas reciente***
+*NOTA: EL fichero lib_ultrasound_utils se encuentra en los repositorios DL_track_US-testing , Algoritmo ASSIST y SMA-testing , en ASSIST estara la version mas reciente*
+
 ---
 
 ## Índice
