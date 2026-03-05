@@ -1,6 +1,6 @@
-# Módulos de Análisis Personalizado para DL_Track_US
+# Módulos de Análisis Personalizado para ASSIST, SMA, DL_Tracks y Ground Truth
 
-Este directorio contiene módulos personalizados y herramientas específicas que se han desarrollado para extender o complementar la funcionalidad principal de la librería `DL_Track_US`.
+Los módulos en esta carpeta `lib_ultrasound_utils` pueden ser utilizados como parte de flujos de trabajo alternativos o para generar datos de referencia (ground truth) para estos análisis automáticos.
 
 El objetivo es mantener el código original de la librería intacto mientras se permite la adición de nuevas funcionalidades, pruebas y flujos de trabajo de análisis.
 
@@ -8,7 +8,7 @@ El objetivo es mantener el código original de la librería intacto mientras se 
 
 ## Índice
 
-1. [Contexto General del Proyecto `DL_Track_US`](#contexto-general-del-proyecto-dl_track_us)
+1. [Contexto General del Proyecto](#contexto-general-del-proyecto-)
 2. [Módulos en este Directorio](#módulos-en-este-directorio)
     * [`US_manual_tools.py`](#1-us_manual_toolspy)
         * [Introducción](#introducción)
@@ -24,15 +24,9 @@ El objetivo es mantener el código original de la librería intacto mientras se 
 
 ---
 
-## Contexto General del Proyecto `DL_Track_US`
+## Contexto general del proyecto 
 
-Este trabajo se enmarca dentro del proyecto `DL_Track_US`, cuyo objetivo es el análisis automático de imágenes estáticas de ultrasonido muscular. El flujo de trabajo general, descrito en el `README.md` principal, implica:
-1.  **Segmentación con CNNs**: Se usan modelos de Deep Learning (`model_apo` y `model_fasc`) para identificar aponeurosis y fascículos.
-2.  **Procesamiento y Refinamiento**: Las máscaras generadas se procesan para extraer contornos, filtrar ruido y suavizar las líneas.
-3.  **Cálculo de Parámetros**: Se calculan métricas clave de la arquitectura muscular como la longitud del fascículo (FL), el ángulo de pennación (PA) y el grosor muscular (MT).
-
-Los módulos en esta carpeta `lib_ultrasound_utils` pueden ser utilizados como parte de flujos de trabajo alternativos o para generar datos de referencia (ground truth) para estos análisis automáticos.
-
+...
 ---
 
 ## Módulos en este Directorio
