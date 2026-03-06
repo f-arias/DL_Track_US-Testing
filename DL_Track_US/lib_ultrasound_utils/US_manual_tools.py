@@ -243,7 +243,8 @@ def calculate_musa_thickness(aponeurosis_sup, aponeurosis_deep, scale='pp', pixe
         'chords': chords # Cuerdas muestreadas
     }
 
-def process_aponeurosis_mask(mask_path: str):
+from typing import Union
+def process_aponeurosis_mask(mask_input: Union[str, np.ndarray]):
     """
     Procesa una máscara de aponeurosis para crear una máscara de ROI.
 
@@ -253,7 +254,7 @@ def process_aponeurosis_mask(mask_path: str):
 
     Parameters:
     ----------
-        mask_path (str): Ruta a la máscara de aponeurosis.
+        mask_input (Union[str, np.ndarray]): Ruta a la máscara de aponeurosis o un ndarray de la máscara.
 
     Returns:
     ----------
@@ -268,20 +269,20 @@ def process_aponeurosis_mask(mask_path: str):
     #APO_LENGTH_TRESH = 600
     #MIN_WIDTH = 60
     
-# --- Validación de Parámetros de Entrada ---
-    # Se verifica si la ruta de la máscara es una cadena de texto.
-    if not isinstance(mask_path, str):
-        raise TypeError("La ruta de la máscara (mask_path) debe ser una cadena de texto.")
-    
-#--- Carga de imagen ---
-    try:
-        # Se intenta leer la imagen desde la ruta proporcionada.
-        mask = imageio.imread(mask_path)
-    except FileNotFoundError as e:
-        # Si el archivo no se encuentra, se imprime un mensaje de error.
-        print(f"Error reading file: {e}")
-        # Se retorna None para indicar que la operación falló.
-        return None
+# --- Validación de Parámetros de Entrada y Carga de imagen ---
+    if isinstance(mask_input, str):
+        try:
+            # Se intenta leer la imagen desde la ruta proporcionada.
+            mask = imageio.imread(mask_input)
+        except FileNotFoundError as e:
+            # Si el archivo no se encuentra, se imprime un mensaje de error.
+            print(f"Error reading file: {e}")
+            # Se retorna None para indicar que la operación falló.
+            return None
+    elif isinstance(mask_input, np.ndarray):
+        mask = mask_input.copy()
+    else:
+        raise TypeError("La entrada de la máscara (mask_input) debe ser una cadena de texto (ruta) o un ndarray.")
 
 #--- Proprocesamiento de imagen ---
     # Se comprueba si la imagen tiene 3 canales (es decir, si es a color).
@@ -353,7 +354,7 @@ def process_aponeurosis_mask(mask_path: str):
     return ex_mask
 
 
-def process_aponeurosis_mask_comprehensive(mask_path: str):
+def process_aponeurosis_mask_comprehensive(mask_input: Union[str, np.ndarray]):
     """
     Procesa una máscara de aponeurosis para crear una máscara de ROI con un preprocesamiento completo.
 
@@ -363,7 +364,7 @@ def process_aponeurosis_mask_comprehensive(mask_path: str):
 
     Parameters:
     ----------
-        mask_path (str): Ruta a la máscara de aponeurosis.
+        mask_input (Union[str, np.ndarray]): Ruta a la máscara de aponeurosis o un ndarray de la máscara.
 
     Returns:
     ----------
@@ -378,19 +379,21 @@ def process_aponeurosis_mask_comprehensive(mask_path: str):
     APO_LENGTH_TRESH = 600     # Define el umbral de longitud para los contornos de la aponeurosis.
     MIN_WIDTH = 60     # Define el ancho mínimo entre aponeurosis.
     
-    # --- Validación de Parámetros de Entrada ---
-    # Se verifica si la ruta de la máscara es una cadena de texto.
-    if not isinstance(mask_path, str):
-        raise TypeError("La ruta de la máscara (mask_path) debe ser una cadena de texto.")
+    # --- Validación de Parámetros de Entrada y Carga de la Máscara ---
+    if isinstance(mask_input, str):
+        try:
+            # Lee la imagen de la máscara desde la ruta especificada.
+            mask = imageio.imread(mask_input)
+        except FileNotFoundError as e: # Maneja el error si no se encuentra el archivo.
+            # Imprime un mensaje de error.
+            print(f"Error reading file: {e}")
+            return None
+    elif isinstance(mask_input, np.ndarray):
+        mask = mask_input.copy()
+    else:
+        raise TypeError("La entrada de la máscara (mask_input) debe ser una cadena de texto (ruta) o un ndarray.")
 
-#--- Carga y Preprocesamiento de la Máscara ---
-    try:
-        # Lee la imagen de la máscara desde la ruta especificada.
-        mask = imageio.imread(mask_path)
-    except FileNotFoundError as e: # Maneja el error si no se encuentra el archivo.
-        # Imprime un mensaje de error.
-        print(f"Error reading file: {e}")
-        return None
+#--- Preprocesamiento de la Máscara ---
 
     # Comprueba si la imagen es a color (3-dimensiones).
     if mask.ndim == 3:
@@ -544,16 +547,16 @@ def process_aponeurosis_mask_comprehensive(mask_path: str):
     # Devuelve la máscara de ROI generada.
     return ex_mask_comprehensive
 
-def overlay_apo_mask(image_apo_path: str, mask_apo_path: str, opacity: float = 0.5, color: str = 'Verde') -> np.ndarray:
+def overlay_apo_mask(image_apo_input: Union[str, np.ndarray], mask_apo_input: Union[str, np.ndarray], opacity: float = 0.5, color: str = 'Verde') -> np.ndarray:
     """
     Superpone una máscara de aponeurosis sobre una imagen de ultrasonido con una opacidad y color personalizables.
 
     Parameters
     ----------
-    image_apo_path : str
-        Ruta a la imagen de ultrasonido.
-    mask_apo_path : str
-        Ruta a la máscara de aponeurosis.
+    image_apo_input : Union[str, np.ndarray]
+        Ruta a la imagen de ultrasonido o un ndarray de la imagen.
+    mask_apo_input : Union[str, np.ndarray]
+        Ruta a la máscara de aponeurosis o un ndarray de la máscara.
     opacity : float, optional
         Nivel de opacidad para la superposición de la máscara. Debe ser un valor entre 0.0 y 1.0.
         Por defecto es 0.5.
@@ -572,11 +575,6 @@ def overlay_apo_mask(image_apo_path: str, mask_apo_path: str, opacity: float = 0
         DL_Track_US/gui_helpers/file_analysis.py
     """
     # --- Validación de Parámetros ---
-    # Se verifica si la ruta de la imagen y la máscara son cadenas de texto.
-    if not isinstance(image_apo_path, str) or not isinstance(mask_apo_path, str):
-        # Si alguna no es una cadena, se lanza un error de tipo (TypeError).
-        raise TypeError("Las rutas de la imagen y la máscara deben ser cadenas de texto.")
-
     # Se verifica que el valor de opacidad esté en el rango de 0.0 a 1.0.
     if not 0.0 <= opacity <= 1.0:
         raise ValueError("La opacidad debe estar entre 0.0 y 1.0.")
@@ -592,15 +590,27 @@ def overlay_apo_mask(image_apo_path: str, mask_apo_path: str, opacity: float = 0
         raise ValueError("El color debe ser 'Rojo', 'Verde' o 'Azul'.")
 
     # --- Carga de Imágenes ---
-    try:
-        # Se lee la imagen de la máscara desde su ruta.
-        mask_apo = imageio.imread(mask_apo_path)
-        # Se lee la imagen de ultrasonido desde su ruta.
-        image_apo = imageio.imread(image_apo_path)
-    except FileNotFoundError as e:
-        # Si no se encuentra alguno de los archivos, se imprime un mensaje de error.
-        print(f"Error al leer el archivo: {e}")
-        return None
+    if isinstance(image_apo_input, str):
+        try:
+            image_apo = imageio.imread(image_apo_input)
+        except FileNotFoundError as e:
+            print(f"Error al leer el archivo de imagen: {e}")
+            return None
+    elif isinstance(image_apo_input, np.ndarray):
+        image_apo = image_apo_input.copy()
+    else:
+        raise TypeError("La entrada de la imagen (image_apo_input) debe ser una cadena de texto (ruta) o un ndarray.")
+
+    if isinstance(mask_apo_input, str):
+        try:
+            mask_apo = imageio.imread(mask_apo_input)
+        except FileNotFoundError as e:
+            print(f"Error al leer el archivo de máscara: {e}")
+            return None
+    elif isinstance(mask_apo_input, np.ndarray):
+        mask_apo = mask_apo_input.copy()
+    else:
+        raise TypeError("La entrada de la máscara (mask_apo_input) debe ser una cadena de texto (ruta) o un ndarray.")
 
     # --- Preprocesamiento de Imágenes ---
     # Se comprueba si la máscara es una imagen a color (3 canales).

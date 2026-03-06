@@ -69,7 +69,7 @@ El algoritmo realiza los siguientes pasos detallados:
 
 Procesa una máscara de aponeurosis para crear una máscara de ROI.
 
-Esta función está optimizada para procesar máscaras de aponeurosis generadas manualmente. Es una versión directa y eficiente. Asume que la máscara de entrada es una representación limpia y no requiere un preprocesamiento extenso, es decir:
+Esta función está optimizada para procesar máscaras de aponeurosis generadas manualmente. Es una versión directa y eficiente. Permite que el usuario ingrese ya sea la ruta de la máscara o bien un ndarray de la misma directamente en la función, para mayor flexibilidad. Asume que la máscara de entrada es una representación limpia y no requiere un preprocesamiento extenso, es decir:
 *   Las aponeurosis están claramente definidas y no contienen ruido.
 *   No hay necesidad de fusionar contornos, ya que las aponeurosis son líneas continuas.
 *   El refinamiento morfológico es redundante, ya que la máscara ya es una representación ideal.
@@ -78,7 +78,7 @@ Esta función está optimizada para procesar máscaras de aponeurosis generadas 
 
 Procesa una máscara de aponeurosis para crear una máscara de ROI con un preprocesamiento completo.
 
-Esta función es una versión más robusta y completa, diseñada para manejar máscaras que pueden contener ruido o discontinuidades, como las generadas automáticamente por modelos de segmentación. Incluye pasos adicionales vitales:
+Esta función es una versión más robusta y completa, diseñada para manejar máscaras que pueden contener ruido o discontinuidades, como las generadas automáticamente por modelos de segmentación. Al igual que la función simplificada, permite ingresar tanto la ruta de la máscara como un ndarray. Incluye pasos adicionales vitales:
 *   Lógica para reordenar puntos de contorno y fusionar contornos cercanos que se hayan cortado.
 *   Aplica esqueletización (con `skeletonize`) y operaciones morfológicas de dilatación y erosión para refinar las líneas de las aponeurosis antes de calcular la ROI.
 
@@ -86,7 +86,7 @@ Esta función es una versión más robusta y completa, diseñada para manejar m�
 
 Una utilidad para superponer una máscara de aponeurosis sobre una imagen de ultrasonido con una opacidad y color personalizables.
 
-Permite una validación visual rápida de las máscaras generadas.
+Permite una validación visual rápida de las máscaras generadas, admitiendo tanto las rutas de los archivos (str) como los arrays correspondientes (np.ndarray) de la imagen original y la máscara de aponeurosis como parámetros de entrada.
 *   **Opacidad**: Acepta un valor flotante entre 0.0 y 1.0 (por defecto 0.5).
 *   **Color**: Acepta 'Rojo', 'Verde' o 'Azul' como entrada de color (por defecto 'Verde').
 
